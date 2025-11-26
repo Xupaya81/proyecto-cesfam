@@ -1,0 +1,74 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<header class="header">
+    <h1>Mi Historial de Solicitudes</h1>
+</header>
+
+<section class="content-box" style="margin-bottom: 30px;">
+    <h2>Solicitudes de Días y Vacaciones</h2>
+    <p>Aquí puede revisar el estado (Pendiente, Aprobado o Rechazado) de sus permisos.</p>
+
+    {% if solicitudes %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Fecha Inicio</th>
+                <th>Días</th>
+                <th>Fecha Solicitud</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sol in solicitudes %}
+            <tr>
+                <td>{{ sol.tipo_permiso|capfirst }}</td>
+                <td>{{ sol.fecha_inicio|date:"Y-m-d" }}</td>
+                <td>{{ sol.dias_solicitados }}</td>
+                <td>{{ sol.fecha_solicitud|date:"Y-m-d H:i" }}</td>
+                
+                <td>
+                    <span class="status-{{ sol.estado|lower }}">
+                        {{ sol.estado }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-data">No ha enviado ninguna solicitud de permiso.</p>
+    {% endif %}
+</section>
+
+<section class="content-box">
+    <h2>Historial de Licencias Médicas (Registros)</h2>
+
+    {% if licencias_recibidas %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Registrado Por</th>
+                <th>Documento</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lic in licencias_recibidas %}
+            <tr>
+                <td>{{ lic.fecha_inicio|date:"Y-m-d" }}</td>
+                <td>{{ lic.fecha_fin|date:"Y-m-d" }}</td>
+                <td>{{ lic.id_subdireccion_carga.username }}</td>
+                <td><a href="{{ lic.ruta_foto_licencia.url }}" target="_blank">Ver Archivo</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-data">No hay licencias médicas registradas a su nombre.</p>
+    {% endif %}
+</section>
+
+{% endblock %}

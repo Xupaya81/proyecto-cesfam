@@ -1,0 +1,50 @@
+{% extends 'base.html' %} {% block content %}
+
+<header class="header">
+    <h1>Reporte de Licencias</h1>
+</header>
+
+<section class="content-box">
+    <h2>Reporte de Licencias Médicas</h2>
+    <p>Historial de todas las licencias ingresadas al sistema por la Subdirección.</p>
+    
+    <div style="margin-bottom: 1rem;">
+        <button onclick="window.print()" class="btn btn-secondary">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+
+    <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+        <thead style="text-align: left;">
+            <tr>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Funcionario</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Fecha Inicio</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Fecha Fin</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Documento (Foto)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for licencia in licencias %}
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ licencia.id_funcionario.username }}</td> 
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ licencia.fecha_inicio|date:"d-m-Y" }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ licencia.fecha_fin|date:"d-m-Y" }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="{{ licencia.ruta_foto_licencia.url }}" target="_blank">Ver Foto</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="padding: 10px; text-align: center;">No hay licencias registradas.</td>
+            </tr>
+            {% endfor %}
+            
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">Ana Rojas</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">20-10-2025</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">25-10-2025</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="#">Ver Foto</a></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %} {% block content %}
+<header class="header">
+    <h1>Gestión de Licencias</h1>
+</header>
+
+<section class="content-box">
+    <h2>Registrar Licencia de Funcionario</h2>
+    <p>Flujo para Subdirección: subir foto, seleccionar funcionario y registrar fechas .</p>
+
+    <form class="form-container" method="POST" action="{% url 'gestion_licencias' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="lista-funcionarios">Seleccionar Funcionario (Rut y Nombre)</label>
+            <select id="lista-funcionarios" name="funcionario_id">
+                <option value="">--- Seleccione Funcionario ---</option>
+                {% for f in funcionarios %}
+                <option value="{{ f.pk }}">{{ f.username }} ({{ f.nombre }} {{ f.last_name }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="licencia-fecha-inicio">Día Inicia</label>
+            <input type="date" id="licencia-fecha-inicio" name="fecha_inicio" required>
+        </div>
+
+        <div class="form-group">
+            <label for="licencia-fecha-fin">Día Final</label>
+            <input type="date" id="licencia-fecha-fin" name="fecha_fin" required>
+        </div>
+
+        <div class="form-group">
+            <label for="doc-archivo">Subir Foto de Licencia</label>
+            <input type="file" id="doc-archivo" name="foto" class="form-upload" required>
+        </div>
+        
+        <button type="submit" class="action-button">
+            Registrar Licencia
+        </button>
+    </form>
+</section>
+
+{% endblock %}

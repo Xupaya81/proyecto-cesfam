@@ -1,0 +1,206 @@
+INFORMACIÓN PARA PRESENTACIÓN DE PROYECTO (PPT)
+PROYECTO: INTRANET CORPORATIVA CESFAM
+
+================================================================================
+1. PORTADA
+================================================================================
+• Título del proyecto: Implementar una plataforma web de Intranet para la gestión administrativa en el CESFAM.
+• Equipo / Alumno: [Tu Nombre Completo]
+• Carrera y especialidad: [Tu Carrera / Especialidad]
+• Docente guía: [Nombre del Docente]
+• Fecha: Noviembre 2025
+
+================================================================================
+2. RESUMEN EJECUTIVO
+================================================================================
+• Contexto breve: La gestión actual de solicitudes y documentos en el CESFAM se realiza mediante procesos manuales dispersos, generando retrasos y pérdida de información.
+• Objetivo general: Centralizar la comunicación interna y automatizar los flujos de solicitudes administrativas mediante una plataforma web segura.
+• Principales acciones:
+    - Desarrollo de sistema de autenticación con roles diferenciados.
+    - Implementación de repositorio documental digital.
+    - Automatización de solicitudes de días administrativos y licencias.
+• Resultados esperados: Reducción del tiempo de gestión administrativa y mejora en la trazabilidad de la información funcionaria.
+
+================================================================================
+3. ANTECEDENTES Y JUSTIFICACIÓN
+================================================================================
+• Contexto y relevancia: Los centros de salud requieren eficiencia administrativa para enfocar recursos en la atención al paciente. La normativa exige trazabilidad en permisos y documentos.
+• Diagnóstico:
+    - Dificultad para acceder a protocolos y formularios actualizados.
+    - Desconocimiento de los funcionarios sobre sus días administrativos disponibles.
+    - Procesos de aprobación lentos y basados en papel.
+• Justificación: La digitalización permite acceso remoto 24/7, transparencia en los saldos de vacaciones/días y seguridad en el manejo de documentos sensibles mediante perfiles de acceso (RBAC).
+
+================================================================================
+4. OBJETIVOS
+================================================================================
+• Objetivo general: Desarrollar una Intranet Corporativa basada en tecnología web para optimizar los procesos de comunicación y gestión de recursos humanos en el CESFAM.
+• Objetivos específicos:
+    1. Diseñar una arquitectura de base de datos relacional para gestionar funcionarios, roles y documentos.
+    2. Implementar un módulo de repositorio documental con control de visibilidad (Público/Privado/Por Rol).
+    3. Automatizar el cálculo y descuento de días administrativos y vacaciones.
+    4. Desarrollar un sistema de reportes exportables a Excel para la Subdirección.
+    5. Registrar todas las acciones críticas en un log de auditoría para seguridad.
+
+================================================================================
+5. MARCO TEÓRICO O CONCEPTUAL
+================================================================================
+• Teorías / estándares:
+    - Arquitectura MVC (Modelo-Vista-Controlador): Utilizada por el framework Django para separar la lógica de negocio de la interfaz de usuario.
+    - RBAC (Role-Based Access Control): Modelo de seguridad implementado para diferenciar permisos entre Funcionarios, Subdirección y Administradores.
+• Definición de términos:
+    - Django: Framework de desarrollo web de alto nivel en Python que fomenta un desarrollo rápido y un diseño limpio.
+    - ORM (Object-Relational Mapping): Técnica que permite interactuar con la base de datos utilizando objetos de Python en lugar de SQL puro.
+    - Hash de Contraseña (Argon2): Algoritmo criptográfico utilizado para almacenar contraseñas de forma segura.
+• Vínculo al proyecto: Django provee la estructura base y seguridad (CSRF, Auth), mientras que RBAC asegura que solo la Subdirección pueda aprobar solicitudes.
+
+================================================================================
+6. METODOLOGÍA
+================================================================================
+• Fases:
+    1. Análisis de Requerimientos (Definición de roles y flujos).
+    2. Diseño del Sistema (Modelado de datos en SQLite y Mockups).
+    3. Desarrollo e Implementación (Codificación en Python/Django y HTML/CSS).
+    4. Pruebas y Despliegue (Validación de flujos y corrección de errores).
+• Actividades clave:
+    - Configuración del entorno virtual y estructura del proyecto.
+    - Creación de modelos (Models.py) y migraciones.
+    - Desarrollo de vistas (Views.py) y lógica de negocio.
+    - Diseño de interfaz (Templates) con feedback visual.
+• Instrumentos: Visual Studio Code, Git para control de versiones, Django Debug Toolbar.
+
+================================================================================
+7. PLAN DE ACCIÓN Y CRONOGRAMA
+================================================================================
+(Ejemplo sugerido para tabla Gantt)
+
+| Actividad | Responsable | Duración Estimada |
+|-----------|-------------|-------------------|
+| Configuración de entorno y BD | Desarrollador | Semana 1 |
+| Desarrollo de Autenticación y Roles | Desarrollador | Semana 2 |
+| Módulo de Solicitudes y Días | Desarrollador | Semana 3 |
+| Repositorio Documental y Filtros | Desarrollador | Semana 4 |
+| Reportes y Logs de Auditoría | Desarrollador | Semana 5 |
+| Pruebas Integrales y Documentación | Desarrollador | Semana 6 |
+
+• Hitos:
+    - Hito 1: Prototipo funcional con Login y Dashboard.
+    - Hito 2: Sistema completo con exportación a Excel y validaciones.
+
+================================================================================
+8. RECURSOS Y PRESUPUESTO
+================================================================================
+• Recursos Humanos:
+    - 1 Desarrollador Full Stack (Python/Django).
+    - 1 Analista Funcional (Rol asumido por el alumno).
+• Materiales / Equipos:
+    - Computador de desarrollo.
+    - Servidor de pruebas (Localhost).
+• Costos (Estimación ficticia):
+    - Horas Hombre Desarrollo: $X.XXX.XXX
+    - Licencias de Software: $0 (Uso de Open Source: Python, Django, SQLite).
+    - Infraestructura (Hosting futuro): $XX.XXX mensual.
+
+================================================================================
+9. EVALUACIÓN Y MEDICIÓN
+================================================================================
+• KPIs (Indicadores Clave de Desempeño):
+    1. Tasa de adopción: % de funcionarios que inician sesión semanalmente.
+    2. Tiempo de respuesta: Reducción en días para la aprobación de permisos (Meta: < 48 horas).
+    3. Digitalización: Cantidad de documentos subidos al repositorio vs. impresos.
+• Frecuencia: Mensual.
+• Métodos: Dashboard de administración integrado en la Intranet y análisis de Logs de Auditoría.
+
+================================================================================
+10. RESULTADOS ESPERADOS E IMPACTO
+================================================================================
+• Productos tangibles:
+    - Aplicación Web funcional desplegada.
+    - Código fuente documentado.
+    - Manual de usuario para funcionarios y administradores.
+    - Base de datos con registros históricos.
+• Beneficios:
+    - Eliminación del uso de papel para solicitudes de días administrativos.
+    - Transparencia total: El funcionario ve sus días restantes en tiempo real.
+    - Seguridad: Solo personal autorizado ve documentos sensibles (Licencias).
+• Horizonte temporal: Impacto inmediato tras la puesta en marcha (Corto plazo).
+
+================================================================================
+11. CONCLUSIONES Y RECOMENDACIONES
+================================================================================
+• Conclusión: La implementación de la Intranet CESFAM logra modernizar la gestión interna, integrando en una sola plataforma herramientas que antes estaban dispersas, mejorando la eficiencia operativa y la satisfacción funcionaria.
+• Recomendaciones:
+    - Implementar copias de seguridad (backups) automáticas diarias de la base de datos.
+    - Capacitar al personal administrativo en el uso del módulo de gestión.
+    - Evaluar la migración a una base de datos más robusta (PostgreSQL) si el volumen de datos crece considerablemente.
+
+================================================================================
+12. ANEXOS
+================================================================================
+• Anexo A: Diagrama Entidad-Relación (DER) de la base de datos.
+• Anexo B: Capturas de pantalla del Dashboard y Formulario de Solicitudes.
+• Anexo C: Ejemplo de reporte Excel generado por el sistema.
+• Anexo D: Código fuente de las vistas principales (views.py).
+
+================================================================================
+13. RESUMEN DETALLADO DEL PROYECTO (MEMORIA EXPLICATIVA)
+================================================================================
+
+A. DESCRIPCIÓN GENERAL Y DESARROLLO TÉCNICO
+--------------------------------------------------------------------------------
+El proyecto "Intranet Corporativa CESFAM" es una solución tecnológica integral desarrollada para modernizar y digitalizar la gestión administrativa interna de un Centro de Salud Familiar. 
+
+Tecnológicamente, el sistema está construido sobre el framework **Django (Python)**, aprovechando su robustez, seguridad y escalabilidad. Se utiliza una arquitectura **Modelo-Vista-Template (MVT)** que asegura una separación clara entre la lógica de negocio, la gestión de datos y la interfaz de usuario.
+- **Backend:** Python 3.13 con Django 5.2.8.
+- **Base de Datos:** SQLite (para desarrollo/prototipado) gestionada a través del ORM de Django.
+- **Frontend:** HTML5, CSS3 (con diseño responsivo) y JavaScript para interactividad (ej. FullCalendar).
+- **Seguridad:** Implementación de hashing de contraseñas avanzado con **Argon2**, protección contra ataques CSRF/XSS y un estricto sistema de permisos basado en roles (RBAC).
+
+B. FUNCIONALIDADES DETALLADAS
+--------------------------------------------------------------------------------
+El sistema se divide en módulos interconectados que cubren las necesidades de los distintos actores (Funcionarios, Subdirección, Administración):
+
+1. **Autenticación y Perfiles:**
+   - Login seguro que direcciona al usuario a su panel correspondiente.
+   - Diferenciación de roles: 
+     - *Funcionario:* Acceso a información personal y solicitudes.
+     - *Subdirección:* Capacidades de gestión, aprobación y reportes.
+     - *Administrador:* Control total de usuarios, roles y auditoría.
+
+2. **Gestión de Solicitudes y Días (Core del Negocio):**
+   - **Solicitudes Digitales:** Los funcionarios pueden solicitar vacaciones o días administrativos vía web. El sistema valida fechas y coherencia lógica.
+   - **Cálculo Automático:** Al aprobarse una solicitud, el sistema descuenta automáticamente los días del saldo del funcionario, manteniendo la integridad de los datos.
+   - **Historial:** Cada usuario tiene acceso a su historial completo de solicitudes y estados (Pendiente, Aprobado, Rechazado).
+
+3. **Repositorio Documental Avanzado:**
+   - Sistema de carga de archivos con categorización (Protocolos, Formularios, etc.).
+   - **Visibilidad Granular:** Innovadora función que permite definir si un documento es "Privado" (solo el autor), "Público" (todos) o "Compartido por Rol" (ej. solo visible para Enfermeros).
+   - Identificación visual de tipos de archivo mediante iconos dinámicos.
+
+4. **Módulo de Licencias Médicas:**
+   - Registro digital de licencias con capacidad de adjuntar fotografías o documentos escaneados.
+   - Flujo de aprobación y visualización en el historial del funcionario.
+
+5. **Comunicación y Calendario:**
+   - **Dashboard Informativo:** Muestra comunicados oficiales y alertas importantes al iniciar sesión.
+   - **Calendario Interactivo:** Visualización de eventos, feriados y fechas críticas del CESFAM.
+
+6. **Auditoría y Reportabilidad:**
+   - **Logs de Auditoría:** Registro inmutable de acciones críticas (quién hizo qué y cuándo) para cumplir con estándares de transparencia.
+   - **Exportación a Excel:** Funcionalidad para que la Subdirección descargue reportes de solicitudes pendientes para análisis externo.
+
+C. UTILIDAD E IMPORTANCIA
+--------------------------------------------------------------------------------
+La implementación de esta Intranet trasciende la mera digitalización; representa un cambio de paradigma en la cultura organizacional del CESFAM.
+
+- **Utilidad Práctica:** Elimina la dependencia del papel y los correos electrónicos dispersos. Centraliza la información, permitiendo que un funcionario sepa exactamente cuántos días de vacaciones le quedan sin tener que ir a RRHH.
+- **Eficiencia Operativa:** Reduce drásticamente los tiempos de respuesta en aprobaciones. Lo que antes tomaba días de "papeleo", ahora se resuelve con un clic.
+- **Transparencia y Trazabilidad:** Al quedar todo registrado en base de datos y logs, se eliminan las ambigüedades y conflictos sobre permisos otorgados o documentos perdidos.
+- **Impacto en Salud:** Al reducir la carga burocrática del personal clínico y administrativo, se libera tiempo valioso que puede ser redirigido a la misión principal del centro: la atención de calidad a los pacientes.
+
+================================================================================
+CONSEJOS DE DISEÑO APLICADOS
+================================================================================
+- Identidad: Usar colores corporativos del CESFAM (Azules, Blancos, Tonos Salud).
+- Tipografía: Sans-serif limpia (Arial o Roboto) para facilitar lectura en pantalla.
+- Estructura: Mantener el menú lateral de navegación consistente en todas las vistas.

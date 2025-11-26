@@ -1,0 +1,35 @@
+{% extends 'base.html' %} {% block content %}
+<header class="header">
+    <h1>Logs de Auditoría</h1>
+</header>
+
+<section class="content-box">
+    <h2>Registro de Actividad del Sistema</h2>
+    
+    <table style="width:100%; border-collapse: collapse;">
+        <thead style="text-align: left;">
+            <tr>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Fecha y Hora</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Usuario</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Acción</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ log.fecha_hora|date:"d-m-Y H:i:s" }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ log.id_usuario_actor.username }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ log.accion }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ log.detalle }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="padding: 10px; text-align: center;">No hay registros de auditoría.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block content %}
+<header class="header">
+    <h1>Repositorio Documental</h1>
+</header>
+
+<section class="content-box">
+    
+    <!-- Formulario de Carga (Colapsable o visible) -->
+    <!-- Permite subir archivos con metadatos y configuración de privacidad -->
+    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eee;">
+        <h3 style="margin-top: 0; color: #1E4A7B;">Subir Nuevo Documento</h3>
+        <form method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+            {% csrf_token %}
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-size: 0.9em; margin-bottom: 5px;">Título:</label>
+                <input type="text" name="titulo" required class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+                <label style="display: block; font-size: 0.9em; margin-bottom: 5px;">Categoría:</label>
+                <select name="categoria" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="General">General</option>
+                    <option value="Protocolo">Protocolo</option>
+                    <option value="Formulario">Formulario</option>
+                    <option value="Personal">Personal</option>
+                </select>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-size: 0.9em; margin-bottom: 5px;">Archivo:</label>
+                <input type="file" name="archivo" required style="width: 100%;">
+            </div>
+            
+            <!-- Sección de Visibilidad -->
+            <!-- Controla quién puede ver el documento: Privado, Público o Roles Específicos -->
+            <div style="width: 100%; margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Visibilidad:</label>
+                
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="visibilidad" value="privado" checked onclick="toggleRoles(false)"> 
+                        <i class="fas fa-lock"></i> Privado (Solo yo)
+                    </label>
+                    
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="visibilidad" value="publico" onclick="toggleRoles(false)"> 
+                        <i class="fas fa-globe"></i> Público (Todos)
+                    </label>
+                    
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="visibilidad" value="roles" onclick="toggleRoles(true)"> 
+                        <i class="fas fa-users"></i> Compartir con...
+                    </label>
+                </div>
+
+                <!-- Selector de Roles (Oculto por defecto, se activa con JS) -->
+                <div id="rolesSelector" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
+                    <span style="font-size: 0.9em; color: #666;">Selecciona los roles que podrán ver este documento:</span>
+                    <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
+                        {% for rol in roles %}
+                        <label style="background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 0.9em; cursor: pointer;">
+                            <input type="checkbox" name="roles_ids" value="{{ rol.id }}"> {{ rol.nombre_rol }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="padding: 10px 20px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                <i class="fas fa-upload"></i> Subir
+            </button>
+        </form>
+    </div>
+
+    <!-- Script para mostrar/ocultar el selector de roles -->
+    <script>
+        function toggleRoles(show) {
+            const selector = document.getElementById('rolesSelector');
+            selector.style.display = show ? 'block' : 'none';
+        }
+    </script>
+
+    <h2>Buscar Documentos</h2>
+
+    <!-- Barra de Búsqueda -->
+    <form method="GET" action="{% url 'documentos' %}">
+        <input type="text" name="q" placeholder="Buscar protocolo, formulario, guía..." class="form-control" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px;" value="{{ request.GET.q|default:'' }}">
+    </form>
+
+    <table style="width:100%; border-collapse: collapse;">
+        <thead style="text-align: left;">
+            <tr>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tipo</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Documento</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Categoría</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Autor</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Estado</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Fecha Carga</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documentos %}
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                    <i class="{{ doc.get_icon }} fa-lg" title="{{ doc.get_extension }}"></i>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ doc.titulo }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ doc.categoria }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    {% if doc.id_autor_carga == request.user %}
+                        <b>Tú</b>
+                    {% else %}
+                        {{ doc.id_autor_carga.first_name }} {{ doc.id_autor_carga.last_name }}
+                    {% endif %}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    {% if doc.publico %}
+                        <span style="background-color: #d4edda; color: #155724; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">Público</span>
+                    {% elif doc.roles_permitidos.exists %}
+                        <span style="background-color: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;" title="Compartido con: {% for r in doc.roles_permitidos.all %}{{ r.nombre_rol }} {% endfor %}">Compartido</span>
+                    {% else %}
+                        <span style="background-color: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">Privado</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ doc.fecha_carga|date:"d-m-Y" }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <a href="{{ doc.ruta_archivo.url }}" target="_blank" style="margin-right: 10px; color: #1E4A7B; text-decoration: none;">
+                        <i class="fas fa-download"></i> Descargar
+                    </a>
+                    {% if doc.id_autor_carga == request.user or user.is_superuser %}
+                        <a href="{% url 'eliminar_documento' doc.id %}" onclick="return confirm('¿Estás seguro de eliminar este documento?');" style="color: #e74c3c; text-decoration: none;">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </a>
+                    {% endif %}
+                </td> 
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="padding: 10px; text-align: center;">No hay documentos cargados en el repositorio.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% endblock %}

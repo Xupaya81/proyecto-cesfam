@@ -1,0 +1,598 @@
+/* --- Reseteo Básico --- */
+body, h1, h2, h3, h4, ul, p {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex; /* La magia: pone el menú al lado del contenido */
+    height: 100vh;
+    background-color: #f0f2f5; /* Un fondo gris más moderno */
+}
+
+/* --- 1. El Menú Lateral (Sidebar) --- */
+.sidebar {
+    width: 260px;
+    /* Gradiente Azul/Petróleo */
+    background: linear-gradient(180deg, #1E4A7B 0%, #102a45 100%);
+    color: white;
+    padding: 20px;
+    height: 100vh; /* Ocupa toda la altura */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+}
+
+.sidebar h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.4em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 20px;
+}
+
+.sidebar .user-display {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    color: #bdc3c7;
+}
+
+.sidebar ul {
+    list-style: none; /* Saca los puntos de la lista */
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sidebar ul li {
+    margin-bottom: 8px;
+}
+
+.sidebar ul li a {
+    text-decoration: none; /* Saca el subrayado */
+    color: #ecf0f1; /* Un gris claro para el texto */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease; /* Transición suave */
+    font-size: 0.95em;
+}
+
+.sidebar ul li a i {
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar ul li a:hover,
+.sidebar ul li a.active {
+    /* Color Verde del logo de Temuco */
+    background-color: #6DB33F; 
+    color: white;
+    transform: translateX(5px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- 2. El Contenido Principal --- */
+.main-content {
+    flex-grow: 1; /* Ocupa todo el espacio restante */
+    padding: 40px;
+    overflow-y: auto; /* Permite scroll si el contenido es largo */
+}
+
+.header {
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.header h1 {
+    color: #2c3e50;
+    font-size: 2.2em;
+    font-weight: 300;
+}
+
+/* --- 3. Tarjetas (Cards) --- */
+.card-container {
+    display: flex; /* Pone las tarjetas una al lado de la otra */
+    gap: 25px; /* Espacio entre tarjetas */
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    flex-basis: 250px; /* Ancho base de cada tarjeta */
+    flex-grow: 1;
+    border-left: 5px solid #1E4A7B;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.card h3 {
+    font-size: 0.9em;
+    /* Color Gris de "Municipio Ciudadano" */
+    color: #7f8c8d; 
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.card .value {
+    font-size: 2.8em;
+    font-weight: bold;
+    /* Color Azul/Petróleo principal */
+    color: #1E4A7B; 
+}
+
+/* --- 4. Tablas --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+thead {
+    background-color: #1E4A7B;
+    color: white;
+}
+
+th, td {
+    padding: 16px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 0.8px;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* --- 5. Formularios --- */
+.content-box {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+
+.content-box h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: #34495e;
+    font-weight: 500;
+}
+
+input[type="text"], 
+input[type="date"], 
+input[type="number"], 
+input[type="password"], 
+input[type="email"],
+select, 
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+    font-family: 'Roboto', sans-serif;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #1E4A7B;
+    box-shadow: 0 0 0 3px rgba(30, 74, 123, 0.1);
+}
+
+button, .action-button {
+    background: linear-gradient(135deg, #1E4A7B 0%, #163a63 100%);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-block;
+    box-shadow: 0 4px 6px rgba(30, 74, 123, 0.2);
+}
+
+button:hover, .action-button:hover {
+    background: linear-gradient(135deg, #255a91 0%, #1E4A7B 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(30, 74, 123, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    box-shadow: 0 4px 6px rgba(127, 140, 141, 0.2);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #aab7b8 0%, #95a5a6 100%);
+    box-shadow: 0 6px 12px rgba(127, 140, 141, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #40d47e 0%, #2ecc71 100%);
+    box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3);
+}
+
+/* --- Login Page Specifics --- */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #1E4A7B 0%, #6DB33F 100%);
+}
+
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-box h2 {
+    color: #1E4A7B;
+    margin-bottom: 30px;
+}
+
+/* --- 4. Contenido (Ej. Comunicados) --- */
+.content-box {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.content-box h2 {
+    margin-bottom: 20px;
+    /* Color Verde del logo */
+    color: #6DB33F;
+}
+
+.comunicado {
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+}
+
+.comunicado:last-child {
+    border-bottom: none;
+}
+.comunicado h4 {
+    font-size: 1.1em;
+    color: #333;
+}
+.comunicado p {
+    color: #555;
+    font-size: 0.9em;
+}
+
+/* --- 5. Estilos del Calendario --- */
+/* (Añadir al final de style.css) */
+
+.calendario-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.calendario-header h3 {
+    font-size: 1.8em;
+    color: #333;
+}
+
+.calendario-dias {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #6c757d;
+}
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendario-grid div {
+    height: 100px;
+    padding: 8px;
+    border: 1px solid #eee;
+    background-color: #fff;
+    font-size: 0.9em;
+}
+
+.dia-pasado {
+    background-color: #f9f9f9;
+    color: #bbb;
+}
+
+.dia-evento {
+    background-color: #fdfae6;
+}
+
+.evento {
+    font-size: 0.8em;
+    padding: 3px;
+    border-radius: 3px;
+    background-color: #6DB33F; /* Verde Temuco */
+    color: white;
+    margin-top: 5px;
+    text-align: center;
+}
+
+.evento.feriado {
+    background-color: #e74c3c; /* Rojo */
+}
+
+/* --- 6. Botón de Acción (para tarjetas) --- */
+/* (Añadir al final de style.css) */
+
+.action-button {
+    text-decoration: none;
+    display: inline-block; /* Para que respete el padding */
+    padding: 10px 15px;
+    margin-top: 15px;
+    border-radius: 5px;
+    
+    /* Color Verde Temuco */
+    background-color: #6DB33F; 
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    transition: background-color 0.2s ease;
+}
+
+.action-button:hover {
+    /* Color Azul Temuco */
+    background-color: #1E4A7B;
+}
+/* --- 7. Nuevo Estilo para el Usuario en el Sidebar --- */
+.user-display {
+    color: #d1e2f4; /* Un color claro para que destaque */
+    font-size: 0.85em;
+    padding: 0 10px 15px 10px; /* Padding ajustado */
+    border-bottom: 1px solid #4b6b8b; /* Línea divisoria */
+    margin-bottom: 30px; /* Espacio antes de que empiece el menú */
+    text-align: center;
+}
+.user-display b {
+    display: block;
+    font-weight: bold;
+    color: white; 
+    font-size: 1.1em;
+    margin-top: 3px;
+}
+
+/* Restaura el padding del main-content (si lo habías cambiado) */
+.main-content {
+    padding-top: 30px !important; 
+}
+/* --- 8. Estilos de Estados Dinámicos (Solicitudes) --- */
+
+.status-aprobado {
+    color: #27ae60; /* Verde oscuro (Éxito) */
+    background-color: #e6f9ed;
+    font-weight: bold;
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.status-rechazado {
+    color: #e74c3c; /* Rojo (Fallo) */
+    background-color: #fcebeb;
+    font-weight: bold;
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.status-pendiente {
+    color: #f39c12; /* Naranja (Alerta) */
+    background-color: #fff9e6;
+    font-weight: bold;
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+/* --- Estilos de Impresión --- */
+@media print {
+    .sidebar, .header, .btn {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    body {
+        background-color: white;
+    }
+    .content-box {
+        box-shadow: none;
+        border: none;
+    }
+}
+
+/* --- Animaciones --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.main-content {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* --- Scrollbar Personalizado --- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+
+::-webkit-scrollbar-thumb {
+    background: #bdc3c7; 
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #95a5a6; 
+}
+
+/* --- Mensajes de Alerta (Django Messages) --- */
+.messages {
+    list-style: none;
+    margin-bottom: 20px;
+}
+
+.messages li {
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.messages li.success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left: 5px solid #28a745;
+}
+
+.messages li.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left: 5px solid #dc3545;
+}
+
+.messages li.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left: 5px solid #ffc107;
+}
+
+.messages li.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-left: 5px solid #17a2b8;
+}
+
+/* --- Fondo de Olas Animadas --- */
+.waves-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 15vh; /* Altura de las olas */
+    margin-bottom: -7px; /* Fix para pequeños espacios */
+    z-index: 0; /* Detrás del contenido pero visible en el fondo */
+    pointer-events: none; /* Click through */
+}
+
+.waves {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin-bottom: -7px; /*Fix for safari gap*/
+    min-height: 100px;
+    max-height: 150px;
+}
+
+/* Animación */
+.parallax > use {
+    animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
+}
+.parallax > use:nth-child(1) {
+    animation-delay: -2s;
+    animation-duration: 7s;
+}
+.parallax > use:nth-child(2) {
+    animation-delay: -3s;
+    animation-duration: 10s;
+}
+.parallax > use:nth-child(3) {
+    animation-delay: -4s;
+    animation-duration: 13s;
+}
+.parallax > use:nth-child(4) {
+    animation-delay: -5s;
+    animation-duration: 20s;
+}
+
+@keyframes move-forever {
+    0% {
+        transform: translate3d(-90px,0,0);
+    }
+    100% {
+        transform: translate3d(85px,0,0);
+    }
+}
+
+/* Ajuste para móviles */
+@media (max-width: 768px) {
+    .waves {
+        height: 40px;
+        min-height: 40px;
+    }
+}
+
+/* Asegurar que el contenido principal esté por encima de las olas */
+.main-content {
+    position: relative;
+    z-index: 1;
+}

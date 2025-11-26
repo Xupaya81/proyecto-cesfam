@@ -1,0 +1,39 @@
+{% extends 'base.html' %} {% block content %}
+
+<header class="header">
+    <h1>Gestión de Calendario</h1>
+</header>
+
+<section class="content-box">
+    <h2>Crear Nuevo Evento</h2>
+    <p>Complete el formulario para agregar un evento al calendario institucional.</p>
+
+    <form class="form-container" method="POST" action="{% url 'gestion_calendario' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="evento-titulo">Título del Evento</label>
+            <input type="text" id="evento-titulo" name="titulo" placeholder="Ej: Capacitación Uso de Software">
+        </div>
+
+        <div class="form-group">
+            <label for="evento-tipo">Tipo de Evento </label>
+            <select id="evento-tipo" name="tipo_evento">
+                <option value="capacitacion">Capacitación</option>
+                <option value="reunion">Reunión</option>
+                <option value="feriado">Feriado</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="evento-fecha-inicio">Fecha de Inicio</label>
+            <input type="date" id="evento-fecha-inicio" name="fecha_inicio">
+        </div>
+        
+        <button type="submit" class="action-button">
+            Agregar al Calendario
+        </button>
+    </form>
+</section>
+
+{% endblock %}

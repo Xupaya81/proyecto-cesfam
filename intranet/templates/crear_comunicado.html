@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<header class="header">
+    <h1>Publicar Nuevo Comunicado</h1>
+</header>
+
+<section class="content-box">
+    <h2>Redactar Mensaje Oficial</h2>
+    <p>Este mensaje será visible para todos los funcionarios en su pantalla de inicio.</p>
+
+    <form class="form-container" method="POST">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="titulo">Título del Comunicado</label>
+            <input type="text" id="titulo" name="titulo" placeholder="Ej: Suspensión de actividades por Fiestas Patrias" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cuerpo">Cuerpo del Mensaje</label>
+            <textarea id="cuerpo" name="cuerpo" rows="6" placeholder="Escriba aquí el detalle del comunicado..." required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Roboto', sans-serif;"></textarea>
+        </div>
+        
+        <button type="submit" class="action-button">
+            Publicar Comunicado
+        </button>
+    </form>
+</section>
+{% endblock %}

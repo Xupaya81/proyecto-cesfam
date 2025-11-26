@@ -1,0 +1,38 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block content %}
+
+<header class="header">
+    <h1>Gestión de Documentos</h1>
+</header>
+
+<section class="content-box">
+    <h2>Cargar Nuevo Documento</h2>
+    <p>Complete el formulario para subir un nuevo protocolo, guía o formulario al repositorio.</p>
+
+    <form class="form-container" method="POST" action="{% url 'gestion_documentos' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="doc-titulo">Título del Documento</label>
+            <input type="text" id="doc-titulo" name="titulo" placeholder="Ej: Protocolo COVID-19 v3">
+        </div>
+
+        <div class="form-group">
+            <label for="doc-categoria">Categoría</label>
+            <input type="text" id="doc-categoria" name="categoria" placeholder="Ej: Protocolo, Formulario, Guía">
+        </div>
+
+        <div class="form-group">
+            <label for="doc-archivo">Seleccionar Archivo (PDF, Word)</label>
+            <input type="file" id="doc-archivo" name="archivo" class="form-upload" required>
+        </div>
+        
+        <button type="submit" class="action-button">
+            Cargar Documento
+        </button>
+    </form>
+</section>
+
+{% endblock %}

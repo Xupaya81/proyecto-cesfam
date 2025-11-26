@@ -1,0 +1,248 @@
+Resumen ejecutivo
+El CESFAM Santa Rosa enfrenta un problema de gestión administrativa derivado de la dependencia de correos electrónicos, documentos físicos y reuniones presenciales. Esto ocasiona duplicidad de información, demoras en la comunicación y baja trazabilidad de procesos.
+ 
+Este informe propone el diseño e implementación de una intranet administrativa que centralice documentos, calendarización y comunicados, con control de accesos y medidas de seguridad robustas. La solución se desarrollará bajo la metodología Scrum, incorporando estándares de Seguridad (ISO/IEC 27001, NIST) y cumpliendo con la normativa chilena vigente (Ley 19.628, Ley Marco de Ciberseguridad 21.663).
+ 
+La propuesta prioriza eficiencia interna, reducción de costos, trazabilidad documental y transparencia organizacional. Se establece un roadmap de implementación, una clasificación de requerimientos, historias de usuario con criterios de aceptación y un plan de seguridad TI con impacto ético y profesional.
+
+
+
+Introducción
+La transformación digital en instituciones de salud es un imperativo estratégico. En el CESFAM Santa Rosa, los procesos administrativos actuales generan ineficiencias que afectan tanto a funcionarios como a la calidad del servicio a la comunidad.
+ 
+Este diagnóstico busca identificar necesidades TI, definir requerimientos, seleccionar metodologías de desarrollo y establecer medidas de seguridad. La finalidad es entregar una solución tecnológica integral y normativamente alineada, que mejore la gestión interna y fortalezca la confianza institucional.
+
+
+
+
+
+
+
+1	Identificación de antecedentes
+Infraestructura actual:
+ - PCs con conexión a internet en el área administrativa.
+ - No existe plataforma centralizada; repositorios dispersos en correo y carpetas locales.
+ 
+Restricciones:
+ - Presupuesto limitado: uso de tecnologías open source y hosting gratuito inicial.
+ - Alcance acotado: solo gestión administrativa (no incluye módulos clínicos ni financieros).
+ 
+Normativa aplicable:
+ - Ley 19.628: Protección de datos personales de funcionarios.
+ - Ley Marco de Ciberseguridad 21.663.
+ - Decreto 7/2023: Norma técnica de ciberseguridad.
+ - ISO/IEC 27001: Gestión de seguridad de la información.
+2	Planificación del levantamiento de datos
+Durante la etapa de levantamiento, se aplicarán técnicas mixtas que combinan entrevistas, encuestas, observación directa y análisis documental. El propósito es obtener información completa desde diferentes perspectivas: directivos, funcionarios administrativos y normativas internas. La siguiente tabla resume los instrumentos, sus objetivos, responsables y la duración estimada de cada actividad.
+
+Técnica	Objetivo	Responsables	Duración
+Entrevistas	Levantar necesidades de directivos y subdirección	Equipo Proyecto	1 semana
+Encuestas 	Validar Prioridades entre funcionarios administrativos	Equipo Proyecto	1 semana
+Observación directa	Analizar flujo de documentos y tiempos	Estudiantes + retro alimentación del profesor	Clase a clase
+Análisis documental	Revisión de normativas y procedimientos	Equipo proyecto	1 semana
+
+3	Especificación de necesidades
+3.1	Historias de usuario
+Las historias de usuario permiten reflejar las necesidades específicas de cada rol dentro del CESFAM. En ellas se detallan los objetivos y los criterios de aceptación que guiarán la validación del sistema.
+1. Gestión documental
+- Como funcionario administrativo, quiero acceder a un repositorio único de documentos (circulares, formularios, protocolos)
+Criterios de aceptación:
+-	Búsqueda en menos de 2 segundos
+-	Acceso diferenciado por Rol
+-	Soportar documentos digitalizados
+2. Publicación de comunicados
+-Como directivo del CESFAM, quiero publicar comunicados oficiales en la intranet para difundir información al personal
+Criterios de aceptación:
+-	Comunicación inmediata
+-	Notificación en pantalla principal
+-	Historial de comunicados accesible
+3. Calendario institucional
+- Como subdirección administrativa, quiero gestionar el calendario de actividades para que los funcionarios conozcan reuniones, capacitaciones y feriados.
+Criterios de aceptación 
+-	Solo editado por roles autorizados 
+-	Vista mensual/semanal
+-	Notificaciones de cambios importantes
+4.Gestion de días administrativos y vacaciones
+- Como funcionario administrativo, quiero revisar mis días administrativos y vacaciones restantes en línea para planificar mis ausencias
+Criterios de aceptación
+-	Datos personalizados por usuario
+-	Modificables solo por dirección o subdirecciones
+-	Visualización clara en el perfil del personal
+5.Carga y modificación de calificaciones/ Documentos internos
+- Como subdirección administrativa, quiero cargar y modificar documentos internos de forma centralizada para mantener actualizada la información.
+Criterios de aceptación
+-	Permite cargar individual y masiva (archivos PDF/Word)
+-	Registra fecha y autor de la carga 
+-	Permite eliminar documentos obsoletos 
+
+
+
+6.Manual de usuario digital
+-Como funcionario nuevo, quiero acceder a un manual de usuario dentro de la intranet para aprender a utilizar sin depender de soporte
+Criterios de aceptación 
+-	Disponibilidad en formato PDF y en versión Web
+-	Accesible desde pantalla principal
+-	Actualización con cada versión del sistema
+7.Roles de usuario
+Como administrador del sistema, quiero definir roles (dirección, subdirecciones, funcionarios) para controlar los permisos de acceso
+Criterios de aceptación:
+-	Creación de perfiles diferenciados
+-	Control granular sobre que funciones accede cada rol
+-	Registro de auditoria en cambios de roles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3.2	Requerimientos
+3.2.1	Funcionales
+	RF1. El sistema debe permitir la carga, modificación y eliminación de documentos internos, garantizando un repositorio único y actualizado.
+	RF2. Debe incluir un buscador de documentos por palabra clave, fecha y categoría, con tiempos de respuesta menores a 2 segundos.
+	RF3. El sistema debe soportar documentos digitalizados en formato PDF, permitiendo conservar archivos históricos.
+	RF4. Debe permitir la publicación de comunicados oficiales en la intranet, visibles en la pantalla principal.
+	RF5. Cada comunicado debe registrar la fecha, el autor y los destinatarios.
+	RF6. Los usuarios deben poder acceder a un historial completo de comunicados.
+	RF7. El calendario institucional debe permitir creación y edición de eventos, restringido solo a roles autorizados.
+	RF8. El sistema debe mostrar días administrativos, feriados y capacitaciones en el calendario.
+	RF9. Los cambios en el calendario deben generar notificaciones automáticas para los usuarios.
+	RF10. Cada funcionario debe visualizar sus días administrativos y vacaciones restantes en su perfil.
+	RF11. Solo la dirección o subdirecciones pueden modificar los registros de días administrativos y vacaciones.
+	RF12. El sistema debe permitir carga masiva de documentos, además de la carga individual.
+	RF13. Toda carga de documentos debe registrar fecha y autor, incluyendo las masivas.
+	RF14. El sistema debe ofrecer un manual de usuario disponible en PDF y versión web.
+	RF15. El manual debe actualizarse automáticamente cada vez que haya una nueva versión del sistema.
+	RF16. El administrador debe poder crear y gestionar roles de usuario diferenciados.
+	RF17. El acceso a funcionalidades debe estar restringido según los roles definidos.
+	RF18. Debe existir un registro de auditoría que almacene los cambios en roles y permisos.
+
+
+
+
+
+
+
+
+3.2.2	No funcionales
+-	RNF1. Todas las comunicaciones deben estar cifradas mediante SSL/TLS 1.3.
+-	RNF2. Los roles administrativos deben contar con autenticación multifactor.
+-	RNF3. Las contraseñas deben almacenarse utilizando hashing con Argon2.
+-	RNF4. El sistema debe realizar copias de seguridad automáticas semanales en un servidor seguro (ej: AWS S3).
+-	RNF5. La disponibilidad del sistema debe ser de al menos un 99% mensual.
+-	RNF6. Las búsquedas deben ejecutarse en menos de 2 segundos.
+-	RNF7. El sistema debe poder escalar hacia un servicio en la nube cuando aumenten los usuarios.
+-	RNF8. El desarrollo debe realizarse en frameworks modernos (ejemplo: Django o Laravel) para asegurar mantenibilidad.
+-	RNF9. La interfaz debe ser intuitiva y accesible desde navegadores modernos.
+-	RNF10. El diseño debe ser responsivo para permitir acceso desde dispositivos móviles.
+-	RNF11. El sistema debe cumplir con la Ley 19.628 sobre protección de datos personales en Chile.
+-	RNF12. El sistema debe alinearse con la Ley Marco de Ciberseguridad 21.663.
+-	RNF13. Deben incorporarse buenas prácticas de la norma ISO/IEC 27001 en seguridad de la información.
+
+
+
+
+
+
+
+
+
+
+
+
+
+4	Metodologías y seguridad
+4.1	Comparación de metodologías
+La elección de la metodología de trabajo es un factor clave para asegurar el éxito del proyecto. Para este caso, se evaluaron enfoques tradicionales y ágiles considerando el contexto del CESFAM Santa Rosa, las restricciones de recursos y la necesidad de retroalimentación constante de los funcionarios administrativos.
+La siguiente tabla resume las principales metodologías analizadas, sus ventajas, desventajas y el nivel de adecuación al proyecto.
+Metodología	Ventajas	Desventajas 	Adecuación al CESFAM
+Cascada	Proceso ordenado y documentado	Muy rígido, no acepta cambios fácilmente	Baja/ el proyecto requiere flexibilidad y retroalimentación
+Kanba	Visualización simple del flujo de trabajo 	Sin roles claros puede ser caótico 	Media/Útil como apoyo, pero insuficiente para entregables definidos
+Scrum	Iteraciones cortas roles claros, entregas rápidas	Requiere disciplina y compromiso constante	Alta/ Ideal para iterar con funcionarios y validar prototipos.
+Design
+Thinking	Centrado en el usuario y la innovación 	No cubre toda la ejecución 	Complementaria / muy útil en diagnósticos y definición inicial.
+
+
+
+
+
+
+
+
+
+
+
+
+4.2	Seguridad TI
+La seguridad de la información en el CESFAM Santa Rosa es crítica, incluso cuando el sistema no gestiona datos clínicos ni financieros. Los documentos administrativos, calendarios y comunicaciones internas constituyen información sensible, cuya protección es esencial para mantener la confianza institucional y cumplir con la normativa vigente.
+Medidas de seguridad propuestas
+1.	Control de accesos y roles
+ La intranet contará con un sistema de autenticación seguro, en el que cada usuario ingresará con credenciales únicas. Se implementará un esquema de roles diferenciados (dirección, subdirecciones, funcionarios), que garantizará que cada perfil solo acceda a las funcionalidades que le corresponden.
+2.	Autenticación y cifrado
+ Para reforzar la seguridad, se aplicará autenticación multifactorial (MFA) para los perfiles más críticos (dirección y subdirecciones). Además, todas las comunicaciones entre el navegador y el servidor estarán protegidas mediante cifrado SSL/TLS 1.3, asegurando la confidencialidad de los datos transmitidos.
+3.	Protección de credenciales y datos
+ Las contraseñas se almacenarán de forma segura utilizando hashing Argon2, uno de los algoritmos más robustos de la actualidad. Asimismo, se establecerán copias de seguridad automáticas semanales en un almacenamiento seguro en la nube (AWS S3 u otro equivalente), para minimizar el riesgo de pérdida de información.
+4.	Disponibilidad y resiliencia
+ El sistema estará disponible al menos el 99% del tiempo en horario laboral, reduciendo al mínimo las interrupciones. En caso de incidentes, los respaldos permitirán restaurar rápidamente la operatividad.
+5.	Cumplimiento normativo y buenas prácticas
+ La solución se alineará con la Ley 19.628 sobre protección de datos personales, la Ley Marco de Ciberseguridad 21.663, y las buenas prácticas internacionales de seguridad como la ISO/IEC 27001. Esto no solo asegura el cumplimiento legal, sino también una cultura organizacional basada en la protección de la información.
+
+
+
+Impacto ético y profesional
+Las medidas propuestas van más allá de lo técnico. Su implementación refuerza la transparencia, fomenta la confianza entre funcionarios y asegura que el CESFAM actúe de acuerdo con los más altos estándares de responsabilidad profesional. La protección de la información no es solo una obligación legal, sino un compromiso ético con la comunidad.
+
+5	Análisis de riesgos
+Durante la planificación del proyecto se identificaron riesgos potenciales que podrían afectar su desarrollo y éxito. Estos riesgos fueron evaluados en términos de probabilidad de ocurrencia, impacto sobre el proyecto y las acciones de mitigación propuestas.
+•	Resistencia al cambio: Existe la posibilidad de que algunos funcionarios no adopten la nueva intranet por preferencia hacia los métodos tradicionales (correo o documentos físicos). Este riesgo es probable en nivel medio y con impacto alto en la adopción del sistema. Para mitigarlo, se recomienda realizar capacitaciones, talleres prácticos y acompañamiento inicial para promover la aceptación.
+•	Falla de hosting gratuito: El uso inicial de servicios gratuitos de hosting podría provocar interrupciones o limitaciones de capacidad. Este riesgo tiene alta probabilidad y un impacto medio en la continuidad del sistema. La mitigación consiste en migrar a un hosting de pago escalable en caso de que la demanda supere la capacidad.
+•	Brecha de seguridad: Aunque el diseño considera seguridad robusta, siempre existe la posibilidad de un ataque o vulnerabilidad. Este riesgo es de baja probabilidad, pero de alto impacto, ya que podría comprometer datos internos. La mitigación se centra en implementar autenticación multifactorial, cifrado avanzado y respaldos frecuentes.
+•	Retraso en entregas: Factores como falta de coordinación o retraso en validaciones podrían afectar el cronograma. Este riesgo tiene probabilidad media y un impacto medio en los plazos. La mitigación consiste en una planificación de Sprints ajustada, con revisiones semanales y control estricto del backlog.
+
+
+
+
+
+
+Tablas de Análisis de riesgo 
+Los principales riesgos que podrían afectar el proyecto: resistencia al cambio, fallas en el hosting gratuito, brechas de seguridad y retrasos en entregas. Se incluyen sus probabilidades, impactos y medidas de mitigación, lo que permite anticipar problemas y asegurar la continuidad del desarrollo.
+Riesgo	Probabilidad	Impacto	Mitigación
+Resistencia al cambio	Media	Alta	Capacitación y talleres
+Falla de hosting gratuito	Alta	Media	Migrar a hosting pago escalable
+Brecha de seguridad	Baja	Alta	Autenticación multifactor y backups
+Retraso en entregas	Media	Media	Planificación de sprints ajustada
+
+
+6	Roadmap de implementación
+Esta tabla presenta la hoja de ruta del proyecto, organizada en sprints. Cada sprint tiene una duración definida y un entregable concreto, como repositorio documental, comunicados oficiales, calendario, seguridad avanzada y pruebas finales. Este enfoque garantiza avances progresivos y validación constante con los usuarios.
+Sprint	Duración	Entregables
+Sprint 1	2 semanas	Repositorio documental básico + login
+Sprint 2	2 semanas	Publicación de comunicados oficiales
+Sprint 3	3 semanas	Calendario de actividades y días administrativos
+Sprint 4	2 semanas	Integración de seguridad avanzada (MFA, backups)
+Sprint 5	2 semanas	Pruebas de validación + ajustes finales
+
+
+
+
+7	Conclusiones y recomendaciones
+El diagnóstico confirma que una intranet administrativa es fundamental para optimizar la gestión interna del CESFAM Santa Rosa. La propuesta, basada en Scrum y medidas de seguridad normativamente alineadas, asegura un desarrollo eficiente, seguro y sostenible.
+ 
+Recomendaciones:
+ 1. Iniciar con un prototipo funcional en hosting gratuito y escalar a nube privada conforme aumenten los requerimientos.
+ 2. Capacitar al personal administrativo en uso de la plataforma y seguridad TI.
+ 3. Evaluar la migración futura hacia integración con sistemas clínicos.
+ 4. Mantener revisiones periódicas de seguridad y normativas aplicables.
+ 

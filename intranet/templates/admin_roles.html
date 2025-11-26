@@ -1,0 +1,52 @@
+{% extends 'base.html' %} {% load static %}
+
+{% block content %}
+<header class="header">
+    <h1>Panel de Administración</h1>
+</header>
+
+<section class="content-box">
+    <h2>Gestionar Roles y Permisos</h2>
+    
+    <table style="width:100%; border-collapse: collapse;">
+        <thead style="text-align: left;">
+            <tr>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Usuario</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Email</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Rol Actual</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Cambiar Rol</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ u.username }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ u.email }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <span style="background-color: #e8f4f8; color: #1E4A7B; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                        {{ u.id_rol.nombre_rol|default:"Sin Rol" }}
+                    </span>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <form method="POST" style="display: flex; gap: 10px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ u.pk }}">
+                        <select name="new_role" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                            {% for r in roles %}
+                                <option value="{{ r.pk }}" {% if u.id_rol.pk == r.pk %}selected{% endif %}>{{ r.nombre_rol }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" style="padding: 5px 10px; font-size: 0.8em;">Guardar</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="padding: 10px; text-align: center;">No hay usuarios registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% endblock %}

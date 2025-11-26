@@ -1,0 +1,89 @@
+{% extends 'base.html' %} {% load static %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %} <header class="header">
+    <h1>Bienvenido, {{ user.username }}</h1>
+</header>
+
+<div style="display: flex; gap: 30px; flex-wrap: wrap;">
+    
+    <!-- Columna Izquierda: Tarjetas y Gráfico -->
+    <div style="flex: 1; min-width: 300px;">
+        <section class="card-container">
+            <div class="card">
+                <h3>Días Administrativos</h3>
+                <div class="value">{{ dias_admin }}</div>
+                <small style="color: #7f8c8d;">Disponibles</small>
+            </div>
+            <div class="card">
+                <h3>Vacaciones Restantes</h3>
+                <div class="value">{{ dias_vacas }}</div>
+                <small style="color: #7f8c8d;">Disponibles</small>
+            </div>
+        </section>
+
+        <section class="content-box" style="text-align: center;">
+            <h2>Resumen de Disponibilidad</h2>
+            <div style="max-width: 300px; margin: 0 auto;">
+                <canvas id="resumenChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <!-- Columna Derecha: Comunicados -->
+    <div style="flex: 1; min-width: 300px;">
+        <section class="content-box">
+            <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                <i class="fas fa-bullhorn" style="color: #1E4A7B;"></i> Comunicados Oficiales
+            </h2>
+            {% for com in comunicados %}
+                <div class="comunicado" style="background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1E4A7B; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h4 style="color: #1E4A7B; margin-bottom: 5px;">{{ com.titulo }} <span style="font-size: 0.8em; color: #7f8c8d; font-weight: normal;">({{ com.fecha_publicacion|date:"d-m-Y" }})</span></h4>
+                    <p style="color: #34495e; line-height: 1.5;">{{ com.cuerpo }}</p>
+                    
+                    {% if user.is_staff %}
+                    <div style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; display: flex; gap: 10px;">
+                        <a href="{% url 'editar_comunicado' com.pk %}" style="color: #f39c12; text-decoration: none; font-size: 0.9em; font-weight: bold;"><i class="fas fa-edit"></i> Editar</a>
+                        <a href="{% url 'eliminar_comunicado' com.pk %}" onclick="return confirm('¿Estás seguro de eliminar este comunicado?');" style="color: #e74c3c; text-decoration: none; font-size: 0.9em; font-weight: bold;"><i class="fas fa-trash-alt"></i> Eliminar</a>
+                    </div>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p style="color: #7f8c8d; font-style: italic;">No hay comunicados recientes.</p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('resumenChart').getContext('2d');
+    const resumenChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Días Admin', 'Vacaciones', 'Usados (Ref)'],
+            datasets: [{
+                label: 'Días Disponibles',
+                data: [{{ dias_admin }}, {{ dias_vacas }}, 5], // 5 es un valor de referencia visual
+                backgroundColor: [
+                    '#1E4A7B', // Azul
+                    '#6DB33F', // Verde
+                    '#ecf0f1'  // Gris
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %} {% block content %}
+<header class="header">
+    <h1>Gestión de Días (RRHH)</h1>
+</header>
+
+<section class="content-box">
+    <h2>Modificar Días de Funcionario (RF11)</h2>
+    <p>Seleccione un funcionario y actualice sus días disponibles.</p>
+
+    <form class="form-container" method="POST" action="{% url 'gestion_dias' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="lista-funcionarios">Seleccionar Funcionario</label>
+            <select id="lista-funcionarios" name="funcionario_id" class="form-control" onchange="actualizarDias()">
+                <option value="">--- Seleccione Funcionario ---</option>
+                {% for f in funcionarios %}
+                <option value="{{ f.pk }}" 
+                        data-vacaciones="{{ f.vacaciones }}" 
+                        data-admin="{{ f.admin }}">
+                    {{ f.first_name }} {{ f.last_name }} ({{ f.username }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_admin_restantes">Días Administrativos Restantes:</label>
+            {{ form.admin_restantes }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_vacaciones_restantes">Días de Vacaciones Restantes:</label>
+            {{ form.vacaciones_restantes }}
+        </div>
+        
+        <button type="submit" class="action-button">
+            Actualizar Días
+        </button>
+    </form>
+</section>
+
+<script>
+    function actualizarDias() {
+        var select = document.getElementById("lista-funcionarios");
+        var selectedOption = select.options[select.selectedIndex];
+        
+        var vacaciones = selectedOption.getAttribute("data-vacaciones");
+        var admin = selectedOption.getAttribute("data-admin");
+        
+        // Asumiendo que los IDs generados por Django son id_campo
+        var inputVacaciones = document.getElementById("id_vacaciones_restantes");
+        var inputAdmin = document.getElementById("id_admin_restantes");
+        
+        if (vacaciones !== null && admin !== null) {
+            inputVacaciones.value = vacaciones;
+            inputAdmin.value = admin;
+        } else {
+            inputVacaciones.value = "";
+            inputAdmin.value = "";
+        }
+    }
+</script>
+
+{% endblock %}

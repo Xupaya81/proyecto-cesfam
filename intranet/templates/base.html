@@ -1,0 +1,133 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Metadatos y Enlaces a Estilos -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet CESFAM</title>
+    
+    <!-- Fuentes y Iconos -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Estilos Propios -->
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+
+    <!-- Bloque para estilos específicos de cada página hija -->
+    {% block extra_head %}
+    {% endblock %}
+</head>
+<body>
+
+    <!-- Barra Lateral de Navegación (Sidebar) -->
+    <nav class="sidebar">
+        <h2>Intranet CESFAM</h2>
+        
+        <!-- Información del Usuario -->
+        <div class="user-display">
+            {% if user.is_authenticated %}
+                Bienvenido, <b>{{ user.username|truncatechars:18 }}</b>
+            {% endif %}
+        </div>
+        
+        {% if user.is_authenticated %}
+        <ul>
+            <!-- Menú General (Para todos los funcionarios) -->
+            <li class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Mi Portal</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'documentos' %}active{% endif %}">
+                <a href="{% url 'documentos' %}"><i class="fas fa-folder-open"></i> Repositorio</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'calendario' %}active{% endif %}">
+                <a href="{% url 'calendario' %}"><i class="fas fa-calendar-alt"></i> Calendario</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_solicitudes' %}active{% endif %}">
+                <a href="{% url 'gestion_solicitudes' %}"><i class="fas fa-file-signature"></i> Solicitudes</a>
+            </li>
+             <li class="{% if request.resolver_match.url_name == 'historial_personal' %}active{% endif %}">
+                <a href="{% url 'historial_personal' %}"><i class="fas fa-history"></i> Mi Historial</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'manual' %}active{% endif %}">
+                <a href="{% url 'manual' %}"><i class="fas fa-book"></i> Manual</a>
+            </li>
+            
+            <!-- Menú de Gestión (Solo Subdirección y Admin) -->
+            {% if user.is_staff %}
+            <hr style="border-color: #4b6b8b; margin: 15px 0;">
+            <li style="padding: 10px; color: #ecf0f1; text-transform: uppercase; font-size: 0.8em; font-weight: bold;">Gestión</li>
+            
+            <li class="{% if request.resolver_match.url_name == 'reporte_solicitudes' %}active{% endif %}">
+                <a href="{% url 'reporte_solicitudes' %}"><i class="fas fa-inbox"></i> Bandeja Solicitudes</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_dias' %}active{% endif %}">
+                <a href="{% url 'gestion_dias' %}"><i class="fas fa-user-edit"></i> Modificar Días</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_documentos' %}active{% endif %}">
+                <a href="{% url 'gestion_documentos' %}"><i class="fas fa-file-upload"></i> Cargar Documento</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_calendario' %}active{% endif %}">
+                <a href="{% url 'gestion_calendario' %}"><i class="fas fa-calendar-plus"></i> Crear Evento</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_licencias' %}active{% endif %}">
+                <a href="{% url 'gestion_licencias' %}"><i class="fas fa-file-medical"></i> Ingresar Licencia</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'reporte_licencias' %}active{% endif %}">
+                <a href="{% url 'reporte_licencias' %}"><i class="fas fa-notes-medical"></i> Reporte Licencias</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'crear_comunicado' %}active{% endif %}">
+                <a href="{% url 'crear_comunicado' %}"><i class="fas fa-bullhorn"></i> Publicar Comunicado</a>
+            </li>
+            {% endif %}
+
+            <!-- Menú de Administración (Solo Superusuario) -->
+            {% if user.is_superuser %}
+            <hr style="border-color: #4b6b8b; margin: 15px 0;">
+            <li style="padding: 10px; color: #ecf0f1; text-transform: uppercase; font-size: 0.8em; font-weight: bold;">Administración</li>
+
+            <li class="{% if request.resolver_match.url_name == 'roles_gestion' %}active{% endif %}">
+                <a href="{% url 'roles_gestion' %}"><i class="fas fa-users-cog"></i> Gestionar Roles</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'logs_auditoria' %}active{% endif %}">
+                <a href="{% url 'logs_auditoria' %}"><i class="fas fa-clipboard-list"></i> Ver Logs</a>
+            </li>
+            {% endif %}
+
+            <hr style="border-color: #4b6b8b; margin: 15px 0;">
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
+        </ul>
+        {% endif %}
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        {% block content %}
+        <!-- Aquí se inyectará el contenido de cada página -->
+        {% endblock %}
+    </main>
+
+    <!-- Scripts Globales -->
+    {% if user.is_authenticated %}
+    {% endif %}
+
+    <!-- Fondo de Olas Animadas -->
+    <div class="waves-container">
+        <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+            <defs>
+                <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+            </defs>
+            <g class="parallax">
+                <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(30, 74, 123, 0.3)" />
+                <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(30, 74, 123, 0.2)" />
+                <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(109, 179, 63, 0.2)" />
+                <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(30, 74, 123, 0.1)" />
+            </g>
+        </svg>
+    </div>
+
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,143 @@
+[
+    {
+        "model": "intranet.roles",
+        "pk": 1,
+        "fields": {"nombre_rol": "Funcionario Administrativo"}
+    },
+    {
+        "model": "intranet.roles",
+        "pk": 2,
+        "fields": {"nombre_rol": "Subdirección"}
+    },
+    {
+        "model": "intranet.roles",
+        "pk": 3,
+        "fields": {"nombre_rol": "Dirección"}
+    },
+    {
+        "model": "intranet.roles",
+        "pk": 4,
+        "fields": {"nombre_rol": "Administrador del Sistema"}
+    },
+
+    {
+        "model": "intranet.funcionarios",
+        "pk": 1,
+        "fields": {
+            "password": "12345678",
+            "is_superuser": true,
+            "username": "admin@cesfam.cl",
+            "first_name": "Admin",
+            "last_name": "Superuser",
+            "email": "admin@cesfam.cl",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2025-11-19T00:00:00Z",
+            "id_rol": 4
+        }
+    },
+    {
+        "model": "intranet.funcionarios",
+        "pk": 2,
+        "fields": {
+            "password": "pbkdf2_sha256$260000$rANd0mSaLtvAlUe$genericHashValue/z3o5xQ=",
+            "is_superuser": false,
+            "username": "subdireccion@cesfam.cl",
+            "first_name": "Ana",
+            "last_name": "Rojas",
+            "email": "ana.rojas@cesfam.cl",
+            "is_staff": true,
+            "is_active": true,
+            "date_joined": "2025-11-19T00:00:00Z",
+            "id_rol": 2
+        }
+    },
+    {
+        "model": "intranet.funcionarios",
+        "pk": 3,
+        "fields": {
+            "password": "pbkdf2_sha256$260000$rANd0mSaLtvAlUe$genericHashValue/z3o5xQ=",
+            "is_superuser": false,
+            "username": "funcionario@cesfam.cl",
+            "first_name": "Juan",
+            "last_name": "Perez",
+            "email": "juan.perez@cesfam.cl",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2025-11-19T00:00:00Z",
+            "id_rol": 1
+        }
+    },
+
+    {
+        "model": "intranet.dias_administrativos",
+        "pk": 1,
+        "fields": {
+            "id_funcionario": 1,
+            "vacaciones_restantes": 40,
+            "admin_restantes": 10
+        }
+    },
+    {
+        "model": "intranet.dias_administrativos",
+        "pk": 2,
+        "fields": {
+            "id_funcionario": 2,
+            "vacaciones_restantes": 20,
+            "admin_restantes": 5
+        }
+    },
+    {
+        "model": "intranet.dias_administrativos",
+        "pk": 3,
+        "fields": {
+            "id_funcionario": 3,
+            "vacaciones_restantes": 10,
+            "admin_restantes": 3
+        }
+    },
+
+    {
+        "model": "intranet.comunicados",
+        "pk": 1,
+        "fields": {
+            "titulo": "PROTOCOLO DE INGRESO V3",
+            "cuerpo": "Se actualizan las normas de acceso a las dependencias administrativas...",
+            "id_autor": 1,
+            "fecha_publicacion": "2025-11-19T10:00:00Z"
+        }
+    },
+    {
+        "model": "intranet.comunicados",
+        "pk": 2,
+        "fields": {
+            "titulo": "FERIADO OFICIAL",
+            "cuerpo": "El próximo lunes 25 es feriado irrenunciable para todo el personal.",
+            "id_autor": 2,
+            "fecha_publicacion": "2025-11-18T15:30:00Z"
+        }
+    },
+
+    {
+        "model": "intranet.documentos",
+        "pk": 1,
+        "fields": {
+            "titulo": "GUIA RAPIDA DE PROTOCOLOS",
+            "categoria": "Protocolo",
+            "ruta_archivo": "documentos/guia_protocolos.pdf",
+            "id_autor_carga": 2,
+            "fecha_carga": "2025-11-18T10:00:00Z"
+        }
+    },
+    {
+        "model": "intranet.documentos",
+        "pk": 2,
+        "fields": {
+            "titulo": "FORMULARIO DE VACACIONES",
+            "categoria": "Formulario",
+            "ruta_archivo": "documentos/formulario_vacaciones.pdf",
+            "id_autor_carga": 1,
+            "fecha_carga": "2025-11-17T14:00:00Z"
+        }
+    }
+]

@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Intranet CESFAM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'loginstyle.css' %}">
+</head>
+<body>
+
+    <form class="login-container" method="POST">
+        {% csrf_token %}
+        
+        <img src="{% static 'tcologo.webp' %}" alt="Logo Temuco" class="logo">
+        <h2>Intranet CESFAM Santa Rosa</h2>
+        <p class="subtitle">Bienvenido al portal de gestión interna</p>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-error" style="color: red; margin-bottom: 15px; font-weight: bold;">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Email de Usuario</label>
+            <div class="input-icon-wrapper">
+                <i class="fas fa-user input-icon"></i>
+                {{ form.username }}
+            </div>
+            
+            {% for error in form.username.errors %}
+                <p style="color: red; font-size: 0.9em; margin-top: 5px;">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.password.id_for_label }}">Contraseña</label>
+            <div class="input-icon-wrapper">
+                <i class="fas fa-lock input-icon"></i>
+                {{ form.password }}
+            </div>
+            
+            {% for error in form.password.errors %}
+                <p style="color: red; font-size: 0.9em; margin-top: 5px;">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <button type="submit" class="login-button">
+            Ingresar
+        </button>
+    </form>
+    
+    <!-- Fondo de Olas Animadas -->
+    <div class="waves-container">
+        <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+            <defs>
+                <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+            </defs>
+            <g class="parallax">
+                <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(30, 74, 123, 0.3)" />
+                <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(30, 74, 123, 0.2)" />
+                <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(109, 179, 63, 0.2)" />
+                <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(30, 74, 123, 0.1)" />
+            </g>
+        </svg>
+    </div>
+
+</body>
+</html>

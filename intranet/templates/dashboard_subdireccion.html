@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Portal - Intranet CESFAM</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+
+    <nav class="sidebar">
+        <h2>Intranet CESFAM</h2>
+        <ul>
+    <li><a href="{% url 'dashboard_funcionario' %}">Mi Portal</a></li>
+    <li><a href="{% url 'documentos' %}">Repositorio Documental</a></li>
+    <li><a href="{% url 'calendario' %}">Calendario</a></li>
+    <li><a href="{% url 'manual' %}">Manual de Usuario</a></li>
+    
+    <hr style="border-color: #4b6b8b; margin: 15px 0;">
+    
+    <li style="padding: 10px; color: #ecf0f1; text-transform: uppercase; font-size: 0.8em; font-weight: bold;">Gestión</li>
+
+    <li><a href="{% url 'gestion_documentos' %}">Cargar Documento</a></li>
+    <li><a href="{% url 'gestion_calendario' %}">Crear Evento</a></li>
+    <li><a href="{% url 'gestion_dias' %}">Modificar Días (RRHH)</a></li>
+    <li><a href="{% url 'gestion_licencias' %}">Ingresar Licencia</a></li>
+    <li><a href="{% url 'reporte_licencias' %}">Reporte de Licencias</a></li>
+    
+    <hr style="border-color: #4b6b8b; margin: 15px 0;">
+    
+    <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+</ul>
+    </nav>
+
+    <main class="main-content">
+        
+        <header class="header">
+            <h1>Panel de gestion</h1>
+        </header>
+
+        <section class="content-box">
+        <h2>Acciones Rápidas</h2>
+        <p>Bienvenido al panel de gestión. Desde aquí puede administrar el contenido de la intranet.</p>
+
+        <div class="card-container" style="margin-top: 20px;">
+            <div class="card">
+                <h3>Documentos</h3>
+                <p>Cargar nuevos protocolos, guías o formularios.</p>
+                <a href="gestion_documentos.html" class="action-button">Cargar Documento</a>
+            </div>
+            <div class="card">
+                <h3>Calendario</h3>
+                <p>Agendar capacitaciones, reuniones o feriados.</p>
+                <a href="gestion_calendario.html" class="action-button">Crear Evento</a>
+            </div>
+            <div class="card">
+                <h3>Recursos Humanos</h3>
+                <p>Modificar días administrativos o vacaciones.</p>
+                <a href="gestion_dias.html" class="action-button">Modificar Días</a>
+            </div>
+        </div>
+         </section>
+
+    </main>
+    
+</body>
+</html>

@@ -1,0 +1,79 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<header class="header">
+    <h1>Bandeja de Solicitudes Pendientes</h1>
+</header>
+
+<section class="content-box">
+    <h2>Solicitudes de Permiso por Aprobar</h2>
+    <p>Lista de solicitudes enviadas por el personal que requieren su revisión. La aprobación descontará los días del balance o registrará la Licencia Médica.</p>
+
+    <div style="margin-bottom: 1rem;">
+        <a href="{% url 'exportar_solicitudes_excel' %}" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+        </a>
+        <button onclick="window.print()" class="btn btn-secondary">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+
+    {% if solicitudes %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Funcionario</th>
+                <th>Tipo</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th>Días</th>
+                <th>Fecha Solicitud</th>
+                <th>Estado</th>
+                <th>Justificativo</th> <th>Acción</th> 
+            </tr>
+        </thead>
+        <tbody>
+            {% for sol in solicitudes %}
+            <tr>
+                <td>{{ sol.id_funcionario_solicitante.first_name }} {{ sol.id_funcionario_solicitante.last_name }} ({{ sol.id_funcionario_solicitante.username }})</td>
+                <td>{{ sol.tipo_permiso|capfirst }}</td>
+                <td>{{ sol.fecha_inicio|date:"Y-m-d" }}</td>
+                <td>{{ sol.fecha_fin|date:"Y-m-d" }}</td>
+                <td>{{ sol.dias_solicitados }}</td>
+                <td>{{ sol.fecha_solicitud|date:"Y-m-d H:i" }}</td>
+                <td><span class="status-{{ sol.estado|lower }}">{{ sol.estado }}</span></td>
+                
+                <td>
+                    {% if sol.justificativo_archivo %}
+                        <a href="{{ sol.justificativo_archivo.url }}" target="_blank" class="document-link">
+                            Ver Archivo
+                        </a>
+                    {% else %}
+                        No aplica
+                    {% endif %}
+                </td>
+                
+                <td>
+                    {% if sol.estado == 'Pendiente' %}
+                    <form method="POST" action="{% url 'aprobar_solicitud' sol.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="action-button small" 
+                                style="background-color: #4CAF50; color: white;"
+                                onclick="return confirm('¿Seguro que desea APROBAR esta solicitud?');">
+                            Aprobar
+                        </button>
+                    </form>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-data">No hay solicitudes de permiso pendientes en este momento.</p>
+    {% endif %}
+</section>
+
+{% endblock %}

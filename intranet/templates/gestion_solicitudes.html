@@ -1,0 +1,52 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<header class="header">
+    <h1>Solicitud de Permiso y Vacaciones</h1>
+</header>
+
+<section class="content-box">
+    <h2>Formulario de Solicitud</h2>
+    <p>Complete los campos para iniciar el proceso de aprobación de su ausencia (Vacaciones, Días Administrativos o Licencia Médica).</p>
+
+    <form class="form-container" method="POST" action="{% url 'gestion_solicitudes' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="tipo-permiso">Tipo de Permiso</label>
+            <select id="tipo-permiso" name="tipo_permiso" required>
+                <option value="">--- Seleccione el tipo ---</option>
+                <option value="vacaciones">Feriado Legal / Vacaciones</option>
+                <option value="administrativo">Días Administrativos</option>
+                <option value="licencia">Licencia Médica</option> 
+                <option value="otro">Otro (Permiso sin Goce)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="fecha-inicio">Fecha de Inicio</label>
+            <input type="date" id="fecha-inicio" name="fecha_inicio" required>
+        </div>
+
+        <div class="form-group">
+            <label for="fecha-fin">Fecha de Término</label>
+            <input type="date" id="fecha-fin" name="fecha_fin" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="justificativo">Documento Justificativo (Solo para Licencia Médica)</label>
+            <input type="file" id="justificativo" name="justificativo_archivo" class="form-upload">
+        </div>
+
+        <div class="form-group">
+            <label for="dias-totales">Cantidad Estimada de Días (Solo Referencia)</label>
+            <input type="number" id="dias-totales" name="dias_totales" placeholder="Se calculará automáticamente..." readonly>
+        </div>
+        
+        <button type="submit" class="action-button">
+            Enviar Solicitud
+        </button>
+    </form>
+</section>
+
+{% endblock %}
