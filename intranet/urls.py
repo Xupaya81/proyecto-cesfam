@@ -27,6 +27,12 @@ urlpatterns = [
     # Rutas exclusivas para superusuarios
     path('roles/gestion/', views.admin_roles_view, name='roles_gestion'), 
     path('logs/auditoria/', views.admin_logs_view, name='logs_auditoria'),
+    
+    # --- Gestión de Usuarios (RRHH) ---
+    path('gestion/usuarios/', views.gestion_usuarios_view, name='gestion_usuarios'),
+    path('gestion/usuarios/crear/', views.crear_usuario_view, name='crear_usuario'),
+    path('gestion/usuarios/editar/<int:usuario_id>/', views.editar_usuario_view, name='editar_usuario'),
+    path('gestion/usuarios/toggle/<int:usuario_id>/', views.desactivar_usuario_view, name='toggle_usuario'),
 
     # --- Vistas de Subdirección (Gestión) ---
     # Rutas para usuarios con rol de Subdirección (is_staff)

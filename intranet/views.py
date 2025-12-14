@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.hashers import check_password
-from .models import Funcionarios, Dias_Administrativos, Comunicados, Documentos, Logs_Auditoria, Licencias, Roles, Logs_Auditoria, Eventos_Calendario, SolicitudesPermiso, Licencias
+from django.contrib import messages
+from .models import Funcionarios, Dias_Administrativos, Comunicados, Documentos, Logs_Auditoria, Licencias, Roles, Logs_Auditoria, Eventos_Calendario, SolicitudesPermiso, Licencias, Unidades
 from django.db.models import Sum, F, Q
 from django.utils import timezone
 from datetime import datetime
@@ -11,32 +12,89 @@ from django.http import JsonResponse, HttpResponse
 import openpyxl
 from django.contrib.auth.forms import AuthenticationForm
 
-# --- Funciones de Ayuda (para proteger vistas) ---
+# --- Funciones de Ayuda (para proteger vistas y verificar roles) ---
 
-def es_admin(user):
-    """
-    Verifica si el usuario es superusuario (Administrador).
-    
-    Args:
-        user (User): El usuario a verificar.
-        
-    Returns:
-        bool: True si es superusuario, False en caso contrario.
-    """
-    return user.is_superuser
+def es_director(user):
+    """Verifica si el usuario es Director General (máximo nivel)."""
+    return user.is_superuser or (user.id_rol and user.id_rol.nombre_rol == 'Director General')
 
 def es_subdireccion(user):
+    """Verifica si el usuario es Subdirección o superior (nivel <= 2)."""
+    if user.is_superuser:
+        return True
+    if user.id_rol:
+        return user.id_rol.nivel_jerarquico <= 2  # Director o Subdirección
+    return False
+
+def es_jefe_unidad(user):
+    """Verifica si el usuario es Jefe de Unidad."""
+    return user.es_jefe_unidad
+
+def es_admin(user):
+    """Verifica si el usuario es superusuario (Director General)."""
+    return user.is_superuser
+
+def puede_gestionar(user):
+    """Verifica si el usuario puede gestionar solicitudes (Jefe, Subdirección o Director)."""
+    if user.is_superuser:
+        return True
+    if user.is_staff:
+        return True
+    if user.id_rol:
+        return user.id_rol.nivel_jerarquico <= 3 or user.es_jefe_unidad
+    return user.es_jefe_unidad
+
+def obtener_funcionarios_de_unidad(user):
     """
-    Verifica si el usuario pertenece a Subdirección o es Administrador.
-    Se utiliza para restringir el acceso a vistas de gestión.
+    Retorna los funcionarios que el usuario puede gestionar según su rol.
+    - Director/Subdirección: Todos
+    - Jefe de Unidad: Solo su unidad
+    - Otros: Solo él mismo
+    """
+    if es_subdireccion(user):
+        return Funcionarios.objects.all()
+    elif user.es_jefe_unidad and user.id_unidad:
+        return Funcionarios.objects.filter(id_unidad=user.id_unidad)
+    else:
+        return Funcionarios.objects.filter(pk=user.pk)
+
+def obtener_solicitudes_para_usuario(user):
+    """
+    Retorna las solicitudes que el usuario puede ver/gestionar según su rol.
+    Implementa la lógica de flujo con casos especiales.
+    """
+    if es_director(user):
+        # Director ve TODO + solicitudes de Subdirección pendientes para él
+        return SolicitudesPermiso.objects.all()
     
-    Args:
-        user (User): El usuario a verificar.
+    elif es_subdireccion(user) and not es_director(user):
+        # Subdirección ve:
+        # 1. Solicitudes Pre-Aprobadas (listas para aprobación final)
+        # 2. Solicitudes Pendientes de funcionarios sin jefe (saltan pre-aprobación)
+        # 3. Solicitudes Pendientes de Jefes de Unidad (van directo a Subdirección)
         
-    Returns:
-        bool: True si es staff (Subdirección) o superusuario, False en caso contrario.
-    """
-    return user.is_staff or user.is_superuser
+        # Solicitudes pre-aprobadas
+        pre_aprobadas = Q(estado='Pre-Aprobado')
+        
+        # Solicitudes pendientes de jefes de unidad (ellos no pueden auto-aprobarse)
+        de_jefes = Q(estado='Pendiente', id_funcionario_solicitante__es_jefe_unidad=True)
+        
+        # Solicitudes pendientes de unidades sin jefe
+        unidades_con_jefe = Funcionarios.objects.filter(es_jefe_unidad=True).values_list('id_unidad', flat=True)
+        sin_jefe = Q(estado='Pendiente') & ~Q(id_funcionario_solicitante__id_unidad__in=unidades_con_jefe)
+        
+        return SolicitudesPermiso.objects.filter(pre_aprobadas | de_jefes | sin_jefe)
+    
+    elif user.es_jefe_unidad and user.id_unidad:
+        # Jefe de Unidad ve solicitudes Pendientes de SU unidad (excepto las suyas)
+        return SolicitudesPermiso.objects.filter(
+            estado='Pendiente',
+            id_funcionario_solicitante__id_unidad=user.id_unidad
+        ).exclude(id_funcionario_solicitante=user)
+    
+    else:
+        # Funcionario normal: solo ve sus propias solicitudes
+        return SolicitudesPermiso.objects.filter(id_funcionario_solicitante=user)
 
 # --- 1. Vistas de Autenticación (Login Robusto) ---
 
@@ -94,97 +152,268 @@ def logout_view(request):
 @login_required(login_url='login')
 def dashboard_view(request):
     """
-    Vista principal del Dashboard.
-    Muestra información relevante para el usuario, como días administrativos restantes,
-    vacaciones disponibles y los últimos comunicados.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        
-    Returns:
-        HttpResponse: Renderiza la plantilla 'dashboard.html' con el contexto.
+    Vista principal del Dashboard con estadísticas según rol.
+    - Funcionario: Sus saldos, solicitudes recientes, comunicados, eventos
+    - Jefe Unidad: + Solicitudes de su equipo, estadísticas de unidad
+    - Subdirección: + Estadísticas de todo el CESFAM
     """
-    # 1. Obtener Días Administrativos (Crear si no existen)
+    user = request.user
+    from django.db.models import Q, Count
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    hoy = timezone.now().date()
+    inicio_mes = hoy.replace(day=1)
+    
+    # 1. Obtener Saldos del funcionario
     try:
-        dias = Dias_Administrativos.objects.get(id_funcionario=request.user)
+        saldos = Dias_Administrativos.objects.get(id_funcionario=user)
     except Dias_Administrativos.DoesNotExist:
-        # Crear un registro inicial si no existe
-        dias = Dias_Administrativos.objects.create(id_funcionario=request.user)
-
-    # 2. Obtener los últimos 3 Comunicados
-    comunicados = Comunicados.objects.all().order_by('-fecha_publicacion')[:3]
-
-    # 3. Enviar datos al HTML
+        saldos = Dias_Administrativos.objects.create(
+            id_funcionario=user,
+            vacaciones_restantes=15,
+            admin_restantes=6,
+            horas_compensacion=0
+        )
+    
+    # 2. Mis solicitudes recientes (últimas 5)
+    mis_solicitudes = SolicitudesPermiso.objects.filter(
+        id_funcionario_solicitante=user
+    ).order_by('-fecha_solicitud')[:5]
+    
+    # 3. Comunicados (filtrados por visibilidad)
+    if es_subdireccion(user):
+        comunicados = Comunicados.objects.all().order_by('-fecha_publicacion')[:5]
+    else:
+        comunicados = Comunicados.objects.filter(
+            Q(unidad_destino__isnull=True) |
+            Q(unidad_destino=user.id_unidad)
+        ).order_by('-fecha_publicacion')[:5]
+    
+    # 4. Próximos eventos (7 días)
+    proximos_eventos = Eventos_Calendario.objects.filter(
+        fecha_inicio__gte=hoy,
+        fecha_inicio__lte=hoy + timedelta(days=7)
+    ).order_by('fecha_inicio')[:5]
+    
+    # Contexto base para todos
     context = {
-        'dias_admin': dias.admin_restantes,
-        'dias_vacas': dias.vacaciones_restantes,
-        'comunicados': comunicados
+        'saldos': saldos,
+        'dias_admin': saldos.admin_restantes,
+        'dias_vacas': saldos.vacaciones_restantes,
+        'horas_comp': saldos.horas_compensacion,
+        'mis_solicitudes': mis_solicitudes,
+        'comunicados': comunicados,
+        'proximos_eventos': proximos_eventos,
+        'es_jefe': user.es_jefe_unidad,
+        'es_subdir': es_subdireccion(user),
+        'fecha_hoy': hoy,
     }
-    # La misma plantilla (dashboard.html) se usa, y el menú se adapta por user.is_staff
+    
+    # 5. Estadísticas para JEFE DE UNIDAD
+    if user.es_jefe_unidad and user.id_unidad and not es_subdireccion(user):
+        # Funcionarios de mi unidad
+        funcionarios_unidad = Funcionarios.objects.filter(
+            id_unidad=user.id_unidad, is_active=True
+        ).count()
+        
+        # Solicitudes pendientes de pre-aprobar
+        solicitudes_pendientes = SolicitudesPermiso.objects.filter(
+            estado='Pendiente',
+            id_funcionario_solicitante__id_unidad=user.id_unidad
+        ).exclude(id_funcionario_solicitante=user).count()
+        
+        # Funcionarios con licencia activa hoy
+        con_licencia_hoy = Licencias.objects.filter(
+            id_funcionario__id_unidad=user.id_unidad,
+            fecha_inicio__lte=hoy,
+            fecha_fin__gte=hoy
+        ).count()
+        
+        # Ausencias del mes en mi unidad
+        ausencias_mes = SolicitudesPermiso.objects.filter(
+            id_funcionario_solicitante__id_unidad=user.id_unidad,
+            estado='Aprobado',
+            fecha_inicio__gte=inicio_mes,
+            fecha_inicio__lte=hoy
+        ).aggregate(total=Count('id'))['total'] or 0
+        
+        # Solicitudes pendientes detalle
+        solicitudes_pendientes_lista = SolicitudesPermiso.objects.filter(
+            estado='Pendiente',
+            id_funcionario_solicitante__id_unidad=user.id_unidad
+        ).exclude(id_funcionario_solicitante=user).order_by('-fecha_solicitud')[:5]
+        
+        context.update({
+            'unidad_nombre': user.id_unidad.nombre_unidad,
+            'funcionarios_unidad': funcionarios_unidad,
+            'solicitudes_pendientes': solicitudes_pendientes,
+            'con_licencia_hoy': con_licencia_hoy,
+            'ausencias_mes': ausencias_mes,
+            'solicitudes_pendientes_lista': solicitudes_pendientes_lista,
+        })
+    
+    # 6. Estadísticas para SUBDIRECCIÓN/DIRECTOR
+    if es_subdireccion(user):
+        # Total funcionarios activos
+        total_funcionarios = Funcionarios.objects.filter(is_active=True).count()
+        
+        # Solicitudes por aprobar (pre-aprobadas + pendientes de jefes/sin jefe)
+        unidades_con_jefe = Funcionarios.objects.filter(es_jefe_unidad=True).values_list('id_unidad', flat=True)
+        solicitudes_por_aprobar = SolicitudesPermiso.objects.filter(
+            Q(estado='Pre-Aprobado') |
+            Q(estado='Pendiente', id_funcionario_solicitante__es_jefe_unidad=True) |
+            (Q(estado='Pendiente') & ~Q(id_funcionario_solicitante__id_unidad__in=unidades_con_jefe))
+        ).count()
+        
+        # Funcionarios con licencia activa hoy (todo CESFAM)
+        con_licencia_hoy_total = Licencias.objects.filter(
+            fecha_inicio__lte=hoy,
+            fecha_fin__gte=hoy
+        ).count()
+        
+        # Solicitudes por aprobar detalle
+        solicitudes_aprobar_lista = SolicitudesPermiso.objects.filter(
+            Q(estado='Pre-Aprobado') |
+            Q(estado='Pendiente', id_funcionario_solicitante__es_jefe_unidad=True) |
+            (Q(estado='Pendiente') & ~Q(id_funcionario_solicitante__id_unidad__in=unidades_con_jefe))
+        ).order_by('-fecha_solicitud')[:5]
+        
+        # Ausencias por unidad este mes
+        from intranet.models import Unidades
+        ausencias_por_unidad = []
+        for unidad in Unidades.objects.filter(activa=True).order_by('nombre_unidad')[:8]:
+            dias = SolicitudesPermiso.objects.filter(
+                id_funcionario_solicitante__id_unidad=unidad,
+                estado='Aprobado',
+                fecha_inicio__gte=inicio_mes
+            ).aggregate(total=Count('id'))['total'] or 0
+            if dias > 0:
+                ausencias_por_unidad.append({
+                    'unidad': unidad.nombre_unidad,
+                    'dias': dias
+                })
+        ausencias_por_unidad.sort(key=lambda x: x['dias'], reverse=True)
+        
+        # Cumpleaños del mes (si hay campo de fecha nacimiento - usamos fecha_joined como demo)
+        # Como no tenemos fecha_nacimiento, mostramos nuevos funcionarios del mes
+        nuevos_mes = Funcionarios.objects.filter(
+            date_joined__month=hoy.month,
+            is_active=True
+        ).count()
+        
+        context.update({
+            'total_funcionarios': total_funcionarios,
+            'solicitudes_por_aprobar': solicitudes_por_aprobar,
+            'con_licencia_hoy_total': con_licencia_hoy_total,
+            'solicitudes_aprobar_lista': solicitudes_aprobar_lista,
+            'ausencias_por_unidad': ausencias_por_unidad,
+            'nuevos_mes': nuevos_mes,
+        })
+    
     return render(request, 'dashboard.html', context)
 
 @login_required(login_url='login')
 def documentos_view(request):
     """
-    Vista para el Repositorio Documental.
-    Permite listar, filtrar y subir documentos.
-    Implementa lógica de visibilidad: Privado, Público y Compartido por Roles.
+    Vista para el Repositorio Documental con visibilidad jerárquica inteligente.
     
-    Args:
-        request (HttpRequest): La petición HTTP.
-        
-    Returns:
-        HttpResponse: Renderiza 'documentos.html' con la lista de documentos y roles.
+    Lógica de visibilidad:
+    - Funcionarios: Privado, Mi Unidad, Enviar a Jefatura
+    - Jefes: + Otros Jefes, Público
+    - Subdirección/Director: + Unidad específica, Solo Jefes, Público
     """
+    user = request.user
+    nivel_usuario = user.id_rol.nivel_jerarquico if user.id_rol else 5
+    es_jefe = nivel_usuario == 3
+    es_superior = nivel_usuario <= 2  # Subdirección o Director
+    
     # Manejo de subida de documentos
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
         categoria = request.POST.get('categoria')
         archivo = request.FILES.get('archivo')
+        visibilidad = request.POST.get('visibilidad')
         
-        # Lógica de visibilidad
-        visibilidad = request.POST.get('visibilidad') # 'privado', 'publico', 'roles'
-        es_publico = (visibilidad == 'publico')
-        roles_seleccionados = request.POST.getlist('roles_ids') # Lista de IDs
-
         if titulo and archivo:
             doc = Documentos.objects.create(
                 titulo=titulo,
                 categoria=categoria,
                 ruta_archivo=archivo,
-                id_autor_carga=request.user,
-                publico=es_publico
+                id_autor_carga=user,
+                publico=False,
+                compartir_unidad=False,
+                compartir_jefes=False,
+                compartir_superiores=False,
+                unidad_destino=None
             )
             
-            # Si eligió compartir con roles específicos
-            if visibilidad == 'roles' and roles_seleccionados:
-                doc.roles_permitidos.set(roles_seleccionados)
-                
+            # Aplicar visibilidad según opción seleccionada
+            if visibilidad == 'publico':
+                doc.publico = True
+            elif visibilidad == 'mi_unidad':
+                doc.compartir_unidad = True
+            elif visibilidad == 'jefatura':
+                doc.compartir_superiores = True
+            elif visibilidad == 'otros_jefes':
+                doc.compartir_jefes = True
+                doc.compartir_superiores = True
+            elif visibilidad == 'solo_jefes':
+                doc.compartir_jefes = True
+            elif visibilidad == 'unidad_especifica':
+                unidad_id = request.POST.get('unidad_destino')
+                if unidad_id:
+                    doc.unidad_destino_id = unidad_id
+            
+            doc.save()
+            messages.success(request, f'Documento "{titulo}" subido exitosamente.')
             return redirect('documentos')
 
-    # Obtener documentos: Públicos O Propios O Compartidos con mi Rol
+    # === FILTRAR DOCUMENTOS SEGÚN VISIBILIDAD ===
+    # El usuario puede ver:
+    # 1. Documentos que él subió (siempre)
+    # 2. Documentos públicos
+    # 3. Documentos compartidos con su unidad (si es de esa unidad)
+    # 4. Documentos compartidos con jefes (si es jefe o superior)
+    # 5. Documentos compartidos con superiores (si es subdirección/director)
+    # 6. Documentos destinados a su unidad específica
+    
+    filtro = Q(id_autor_carga=user) | Q(publico=True)
+    
+    # Si tiene unidad, ver los compartidos con su unidad
+    if user.id_unidad:
+        filtro |= Q(compartir_unidad=True, id_autor_carga__id_unidad=user.id_unidad)
+        # Ver docs destinados específicamente a su unidad
+        filtro |= Q(unidad_destino=user.id_unidad)
+    
+    # Si es Jefe o superior, ver docs compartidos con jefes
+    if es_jefe or es_superior:
+        filtro |= Q(compartir_jefes=True)
+    
+    # Si es superior (Subdirección/Director), ver docs enviados a jefatura
+    if es_superior:
+        filtro |= Q(compartir_superiores=True)
+    
+    # Aplicar búsqueda si existe
     query = request.GET.get('q')
+    cat_filter = request.GET.get('cat')
     
-    # Filtro base: 
-    # 1. Documentos Públicos
-    # 2. Documentos que YO subí
-    # 3. Documentos compartidos con MI ROL
-    base_filter = Q(publico=True) | Q(id_autor_carga=request.user)
-    
-    if request.user.id_rol:
-        base_filter = base_filter | Q(roles_permitidos=request.user.id_rol)
+    docs = Documentos.objects.filter(filtro).distinct().order_by('-fecha_carga')
     
     if query:
-        docs = Documentos.objects.filter(base_filter, titulo__icontains=query).distinct().order_by('-fecha_carga')
-    else:
-        docs = Documentos.objects.filter(base_filter).distinct().order_by('-fecha_carga')
+        docs = docs.filter(titulo__icontains=query)
+    if cat_filter:
+        docs = docs.filter(categoria=cat_filter)
     
-    # Obtener roles para el formulario de carga
-    roles_disponibles = Roles.objects.all()
+    # Obtener unidades para el formulario (solo para superiores)
+    unidades = Unidades.objects.all() if es_superior else None
         
     return render(request, 'documentos.html', {
         'documentos': docs,
-        'roles': roles_disponibles
+        'unidades': unidades,
+        'es_jefe': es_jefe,
+        'es_superior': es_superior,
+        'nivel_usuario': nivel_usuario,
     })
 
 @login_required(login_url='login')
@@ -240,55 +469,142 @@ def manual_view(request):
 @login_required(login_url='login')
 def gestion_solicitudes_view(request):
     """
-    Vista para que el Funcionario envíe solicitudes de días administrativos, vacaciones o licencias.
-    Calcula automáticamente la cantidad de días solicitados.
-    La aprobación posterior se gestiona en la vista de RRHH/Subdirección.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        
-    Returns:
-        HttpResponse: Renderiza el formulario o redirige al historial tras éxito.
+    Vista para que el Funcionario envíe solicitudes de permisos.
+    Tipos: administrativo, vacaciones, sin_goce, hora_medica, licencia, duelo, compensacion
+    Implementa validaciones y casos especiales (Director: Auto-aprobación).
     """
+    user = request.user
+    
+    # Obtener saldos del funcionario
+    saldos, created = Dias_Administrativos.objects.get_or_create(
+        id_funcionario=user,
+        defaults={'vacaciones_restantes': 15, 'admin_restantes': 6, 'horas_compensacion': 0}
+    )
+    
     if request.method == 'POST':
-        # 1. Obtener los datos del formulario
         tipo = request.POST.get('tipo_permiso')
         inicio_str = request.POST.get('fecha_inicio')
         fin_str = request.POST.get('fecha_fin')
-        archivo = request.FILES.get('justificativo_archivo') # Obtener archivo si existe
+        archivo = request.FILES.get('justificativo_archivo')
+        observaciones = request.POST.get('observaciones', '')
+        horas_str = request.POST.get('horas_solicitadas', '0')
         
         try:
-            # Convertir strings a objetos date
             fecha_inicio = datetime.strptime(inicio_str, '%Y-%m-%d').date()
             fecha_fin = datetime.strptime(fin_str, '%Y-%m-%d').date()
+            horas = int(horas_str) if horas_str else 0
 
-            # Validar fechas
             if fecha_fin < fecha_inicio:
-                return render(request, 'gestion_solicitudes.html', {'error': 'La fecha de término no puede ser anterior a la de inicio.'})
+                return render(request, 'gestion_solicitudes.html', {
+                    'error': 'La fecha de término no puede ser anterior a la de inicio.',
+                    'saldos': saldos
+                })
 
-            # 2. Calcular los días solicitados (diferencia de fechas)
-            diferencia = fecha_fin - fecha_inicio
-            dias_solicitados = diferencia.days + 1 # +1 para incluir el día de inicio
+            dias_solicitados = (fecha_fin - fecha_inicio).days + 1
             
-            # 3. Guardar la solicitud en la base de datos
-            SolicitudesPermiso.objects.create(
-                id_funcionario_solicitante=request.user, # El usuario logueado
+            # --- VALIDACIONES POR TIPO ---
+            
+            # Día Administrativo: máximo 6/año y verificar saldo
+            if tipo == 'administrativo':
+                if dias_solicitados > saldos.admin_restantes:
+                    return render(request, 'gestion_solicitudes.html', {
+                        'error': f'No tienes suficientes días administrativos. Disponibles: {saldos.admin_restantes}, Solicitados: {dias_solicitados}',
+                        'saldos': saldos
+                    })
+            
+            # Vacaciones: verificar saldo
+            if tipo == 'vacaciones':
+                if dias_solicitados > saldos.vacaciones_restantes:
+                    return render(request, 'gestion_solicitudes.html', {
+                        'error': f'No tienes suficientes días de vacaciones. Disponibles: {saldos.vacaciones_restantes}, Solicitados: {dias_solicitados}',
+                        'saldos': saldos
+                    })
+            
+            # Licencia y Duelo: requieren documento
+            if tipo in ['licencia', 'duelo'] and not archivo:
+                return render(request, 'gestion_solicitudes.html', {
+                    'error': f'El tipo "{tipo}" requiere documento justificativo obligatorio.',
+                    'saldos': saldos
+                })
+            
+            # Hora médica: máximo 4 horas, mismo día
+            if tipo == 'hora_medica':
+                if horas < 1 or horas > 4:
+                    return render(request, 'gestion_solicitudes.html', {
+                        'error': 'Hora médica debe ser entre 1 y 4 horas.',
+                        'saldos': saldos
+                    })
+                fecha_fin = fecha_inicio  # Mismo día
+                dias_solicitados = 1
+            
+            # Compensación: verificar horas acumuladas
+            if tipo == 'compensacion':
+                horas_necesarias = dias_solicitados * 8  # 8 horas por día
+                if horas_necesarias > saldos.horas_compensacion:
+                    return render(request, 'gestion_solicitudes.html', {
+                        'error': f'No tienes suficientes horas de compensación. Disponibles: {saldos.horas_compensacion}, Necesarias: {horas_necesarias}',
+                        'saldos': saldos
+                    })
+            
+            # Duelo: máximo 7 días
+            if tipo == 'duelo' and dias_solicitados > 7:
+                return render(request, 'gestion_solicitudes.html', {
+                    'error': 'El permiso por duelo es de máximo 7 días.',
+                    'saldos': saldos
+                })
+            
+            # Crear la solicitud
+            solicitud = SolicitudesPermiso.objects.create(
+                id_funcionario_solicitante=user,
                 tipo_permiso=tipo,
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
                 dias_solicitados=dias_solicitados,
-                justificativo_archivo=archivo, # Guardar el archivo
+                horas_solicitadas=horas if tipo == 'hora_medica' else 0,
+                justificativo_archivo=archivo,
+                observaciones=observaciones,
                 estado='Pendiente'
             )
             
-            # 4. Redirigir al historial para ver la solicitud creada
+            # --- CASO ESPECIAL: Director solicita (Auto-aprobación) ---
+            if es_director(user):
+                # Descontar según tipo
+                if tipo == 'vacaciones':
+                    saldos.vacaciones_restantes -= dias_solicitados
+                    saldos.save()
+                elif tipo == 'administrativo':
+                    saldos.admin_restantes -= dias_solicitados
+                    saldos.save()
+                elif tipo == 'compensacion':
+                    saldos.horas_compensacion -= (dias_solicitados * 8)
+                    saldos.save()
+                
+                solicitud.estado = 'Aprobado'
+                solicitud.aprobado_por = user
+                solicitud.fecha_aprobacion = timezone.now()
+                solicitud.save()
+                
+                Logs_Auditoria.objects.create(
+                    id_usuario_actor=user,
+                    accion='Solicitud Auto-Aprobada (Director)',
+                    detalle=f"Director {user.username} auto-aprobó solicitud de {tipo}. Días: {dias_solicitados}"
+                )
+            
             return redirect('historial_personal')
             
-        except ValueError:
-             return render(request, 'gestion_solicitudes.html', {'error': 'Formato de fecha inválido.'})
+        except ValueError as e:
+            return render(request, 'gestion_solicitudes.html', {
+                'error': f'Error en los datos: {str(e)}',
+                'saldos': saldos
+            })
 
-    # Renderiza el formulario de solicitud
-    return render(request, 'gestion_solicitudes.html')
+    # Contexto para mostrar info del usuario
+    context = {
+        'es_director': es_director(user),
+        'es_jefe': user.es_jefe_unidad,
+        'saldos': saldos,
+    }
+    return render(request, 'gestion_solicitudes.html', context)
 
 # --- 3. Vistas de Subdirección (Protegidas) ---
 
@@ -356,24 +672,25 @@ def gestion_calendario_view(request):
     # Se obtienen datos si se necesitan para un selector, pero por ahora solo renderiza
     return render(request, 'gestion_calendario.html')
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def gestion_dias_view(request):
     """
     Vista para gestionar los días administrativos y vacaciones de los funcionarios.
-    Permite a la Subdirección ver y modificar los saldos de días.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        
-    Returns:
-        HttpResponse: Renderiza la tabla de funcionarios y el formulario de edición.
+    Filtra según el rol:
+    - Director/Subdirección: Ve todos los funcionarios
+    - Jefe de Unidad: Solo ve funcionarios de su unidad
     """
-    # Obtenemos funcionarios y preparamos datos para el frontend
-    funcionarios_qs = Funcionarios.objects.all().order_by('username')
+    user = request.user
+    
+    # Verificar permisos
+    if not puede_gestionar(user):
+        return redirect('dashboard')
+    
+    # Filtrar funcionarios según rol
+    funcionarios_qs = obtener_funcionarios_de_unidad(user).order_by('username')
     funcionarios_data = []
     
     for f in funcionarios_qs:
-        # Intentamos obtener sus días, si no existe, asumimos valores por defecto (o 0)
         try:
             dias = f.dias_administrativos
             vacaciones = dias.vacaciones_restantes
@@ -388,35 +705,45 @@ def gestion_dias_view(request):
             'first_name': f.first_name,
             'last_name': f.last_name,
             'vacaciones': vacaciones,
-            'admin': admin
+            'admin': admin,
+            'unidad': f.id_unidad.nombre_unidad if f.id_unidad else 'Sin unidad',
+            'rol': f.id_rol.nombre_rol if f.id_rol else 'Sin rol',
         })
 
-    # 1. Lógica de PROCESAMIENTO (POST)
+    # Lógica de PROCESAMIENTO (POST)
     if request.method == 'POST':
         funcionario_id = request.POST.get('funcionario_id')
+        funcionario_obj = get_object_or_404(Funcionarios, pk=funcionario_id)
         
-        # Buscamos o creamos el registro de días
+        # Verificar que puede modificar a este funcionario
+        if not es_subdireccion(user):
+            if user.id_unidad != funcionario_obj.id_unidad:
+                return redirect('gestion_dias')
+        
         dias_obj, created = Dias_Administrativos.objects.get_or_create(
-            id_funcionario=get_object_or_404(Funcionarios, pk=funcionario_id)
+            id_funcionario=funcionario_obj
         )
         
-        # Le pasamos los datos del formulario (request.POST) al Formulario de Django
         form = DiasAdministrativosForm(request.POST, instance=dias_obj)
 
         if form.is_valid():
-            # Django hace el casteo y la validación. Solo guardamos.
             form.save()
-            return redirect('gestion_dias') # Redirigir a la misma página para seguir editando
-        
-        # Si no es válido, se sigue mostrando el formulario con errores (no implementado en este prototipo)
+            
+            # Log de auditoría
+            Logs_Auditoria.objects.create(
+                id_usuario_actor=user,
+                accion='Modificación de Días',
+                detalle=f"Se modificaron los días de {funcionario_obj.username}"
+            )
+            return redirect('gestion_dias')
     
-    # 2. Lógica de CARGA DE PÁGINA (GET)
-    # Creamos un formulario vacío para el primer funcionario (por defecto)
     form = DiasAdministrativosForm() 
     
     context = {
-        'funcionarios': funcionarios_data, # Pasamos la lista procesada
-        'form': form 
+        'funcionarios': funcionarios_data,
+        'form': form,
+        'es_jefe': user.es_jefe_unidad,
+        'unidad_usuario': user.id_unidad.nombre_unidad if user.id_unidad else 'Sin unidad',
     }
     return render(request, 'gestion_dias.html', context)
 # intranet/views.py
@@ -467,11 +794,12 @@ def gestion_licencias_view(request):
     funcionarios = Funcionarios.objects.all().order_by('username')
     return render(request, 'gestion_licencias.html', {'funcionarios': funcionarios})
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def reporte_licencias_view(request):
     """
-    Vista para listar todas las licencias registradas (Lectura funcional).
-    Muestra un historial completo de licencias médicas.
+    Vista para listar licencias registradas.
+    - Subdirección/Director: Ve todas las licencias
+    - Jefe de Unidad: Ve solo licencias de su unidad
     
     Args:
         request (HttpRequest): La petición HTTP.
@@ -479,8 +807,21 @@ def reporte_licencias_view(request):
     Returns:
         HttpResponse: Renderiza 'reporte_licencias.html'.
     """
-    # 1. Se obtienen todas las licencias de la base de datos
-    licencias = Licencias.objects.all().order_by('-fecha_registro')
+    user = request.user
+    
+    # Verificar que puede gestionar (Subdirección o Jefe de Unidad)
+    if not puede_gestionar(user):
+        return redirect('dashboard')
+    
+    # Filtrar licencias según rol
+    if es_subdireccion(user):
+        # Subdirección ve todas las licencias
+        licencias = Licencias.objects.all().order_by('-fecha_registro')
+    else:
+        # Jefe de Unidad ve solo licencias de su unidad
+        licencias = Licencias.objects.filter(
+            id_funcionario__id_unidad=user.id_unidad
+        ).order_by('-fecha_registro')
     
     context = {
         'licencias': licencias,
@@ -492,23 +833,34 @@ def reporte_licencias_view(request):
 
 # intranet/views.py
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def reporte_solicitudes_view(request):
     """
-    Vista para que la Subdirección revise las solicitudes de permiso (solo lectura).
-    Muestra las solicitudes pendientes de aprobación.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        
-    Returns:
-        HttpResponse: Renderiza 'reporte_solicitudes.html'.
+    Vista para revisar y gestionar solicitudes de permiso.
+    Filtra según el rol del usuario:
+    - Director: Ve todas las solicitudes
+    - Subdirección: Ve pre-aprobadas + pendientes sin jefe + de jefes
+    - Jefe de Unidad: Ve pendientes de su unidad (para pre-aprobar)
     """
-    # Obtenemos todas las solicitudes que están en estado 'Pendiente'
-    solicitudes = SolicitudesPermiso.objects.filter(estado='Pendiente').order_by('-fecha_solicitud')
+    user = request.user
+    
+    # Verificar que puede gestionar
+    if not puede_gestionar(user):
+        return redirect('dashboard')
+    
+    # Obtener solicitudes según rol
+    solicitudes = obtener_solicitudes_para_usuario(user).order_by('-fecha_solicitud')
+    
+    # Determinar qué acción puede hacer el usuario
+    puede_aprobar_final = es_subdireccion(user)
+    puede_pre_aprobar = user.es_jefe_unidad and not es_subdireccion(user)
     
     context = {
-        'solicitudes': solicitudes
+        'solicitudes': solicitudes,
+        'puede_aprobar_final': puede_aprobar_final,
+        'puede_pre_aprobar': puede_pre_aprobar,
+        'es_jefe': user.es_jefe_unidad,
+        'unidad_usuario': user.id_unidad.nombre_unidad if user.id_unidad else 'Sin unidad',
     }
     return render(request, 'reporte_solicitudes.html', context)
 
@@ -551,58 +903,171 @@ def exportar_solicitudes_excel(request):
     wb.save(response)
     return response
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def aprobar_solicitud_view(request, solicitud_id):
     """
-    Procesa la aprobación de una solicitud.
-    Si es licencia, crea el registro correspondiente.
-    Si son vacaciones o días administrativos, descuenta del balance del funcionario.
+    Procesa la aprobación/pre-aprobación de una solicitud según el rol del usuario.
     
-    Args:
-        request (HttpRequest): La petición HTTP.
-        solicitud_id (int): ID de la solicitud a aprobar.
-        
-    Returns:
-        HttpResponse: Redirección al reporte de solicitudes.
+    Flujo:
+    - Director que solicita: Auto-aprobado
+    - Subdirección que solicita: Va a Director
+    - Jefe que solicita: Va directo a Subdirección
+    - Funcionario: Jefe pre-aprueba → Subdirección aprueba final
+    - Sin jefe en unidad: Directo a Subdirección
     """
     if request.method == 'POST':
-        # 1. Obtener la solicitud
         solicitud = get_object_or_404(SolicitudesPermiso, pk=solicitud_id)
+        user = request.user
+        accion = request.POST.get('accion', 'aprobar')
         
-        if solicitud.estado == 'Pendiente':
-            
-            # --- 2. Lógica para Licencia Médica (Crea un registro, no descuenta días) ---
-            if solicitud.tipo_permiso == 'licencia':
-                
-                # 2.1. Crear el registro en la tabla Licencias (historial)
-                Licencias.objects.create(
-                    id_funcionario=solicitud.id_funcionario_solicitante,
-                    id_subdireccion_carga=request.user, # Subdirector que aprueba
-                    fecha_inicio=solicitud.fecha_inicio,
-                    fecha_fin=solicitud.fecha_fin,
-                    # El archivo subido en el formulario de solicitud se traslada aquí
-                    ruta_foto_licencia=solicitud.justificativo_archivo 
-                )
-                
-            # --- 3. Lógica para Días/Vacaciones (Descuenta del balance) ---
-            elif solicitud.tipo_permiso in ['vacaciones', 'administrativo']:
-                
-                # 3.1. Determinar qué campo del balance actualizar
-                if solicitud.tipo_permiso == 'vacaciones':
-                    campo_balance = 'vacaciones_restantes'
-                else:
-                    campo_balance = 'admin_restantes'
-                    
-                # 3.2. ACTUALIZACIÓN ATÓMICA del balance
-                Dias_Administrativos.objects.filter(id_funcionario=solicitud.id_funcionario_solicitante).update(
-                    **{campo_balance: F(campo_balance) - solicitud.dias_solicitados}
-                )
-
-            # 4. Marcar la solicitud como aprobada
-            solicitud.estado = 'Aprobado'
+        # --- RECHAZAR (cualquier nivel puede rechazar) ---
+        if accion == 'rechazar':
+            comentario = request.POST.get('comentario_rechazo', '')
+            solicitud.estado = 'Rechazado'
+            solicitud.comentario_rechazo = comentario
             solicitud.save()
+            
+            # Log de auditoría
+            Logs_Auditoria.objects.create(
+                id_usuario_actor=user,
+                accion='Solicitud Rechazada',
+                detalle=f"Solicitud #{solicitud.pk} de {solicitud.id_funcionario_solicitante.username} rechazada. Motivo: {comentario}"
+            )
+            return redirect('reporte_solicitudes')
+        
+        # --- PRE-APROBAR (Solo Jefe de Unidad) ---
+        if accion == 'pre_aprobar' and solicitud.estado == 'Pendiente':
+            if user.es_jefe_unidad:
+                solicitud.estado = 'Pre-Aprobado'
+                solicitud.pre_aprobado_por = user
+                solicitud.fecha_pre_aprobacion = timezone.now()
+                solicitud.save()
+                
+                # Log de auditoría
+                Logs_Auditoria.objects.create(
+                    id_usuario_actor=user,
+                    accion='Solicitud Pre-Aprobada',
+                    detalle=f"Solicitud #{solicitud.pk} de {solicitud.id_funcionario_solicitante.username} pre-aprobada por Jefe de Unidad"
+                )
+            return redirect('reporte_solicitudes')
+        
+        # --- APROBAR FINAL (Solo Subdirección o Director) ---
+        if accion == 'aprobar' and solicitud.estado in ['Pendiente', 'Pre-Aprobado']:
+            if es_subdireccion(user):
+                
+                # Obtener saldos del solicitante
+                saldos, created = Dias_Administrativos.objects.get_or_create(
+                    id_funcionario=solicitud.id_funcionario_solicitante,
+                    defaults={'vacaciones_restantes': 15, 'admin_restantes': 6, 'horas_compensacion': 0}
+                )
+                
+                # Lógica por tipo de permiso
+                tipo = solicitud.tipo_permiso
+                
+                # Licencia Médica: Crea registro en tabla Licencias
+                if tipo == 'licencia':
+                    Licencias.objects.create(
+                        id_funcionario=solicitud.id_funcionario_solicitante,
+                        id_subdireccion_carga=user,
+                        fecha_inicio=solicitud.fecha_inicio,
+                        fecha_fin=solicitud.fecha_fin,
+                        ruta_foto_licencia=solicitud.justificativo_archivo 
+                    )
+                
+                # Vacaciones: Descuenta del saldo
+                elif tipo == 'vacaciones':
+                    saldos.vacaciones_restantes -= solicitud.dias_solicitados
+                    saldos.save()
+                
+                # Día Administrativo: Descuenta del saldo
+                elif tipo == 'administrativo':
+                    saldos.admin_restantes -= solicitud.dias_solicitados
+                    saldos.save()
+                
+                # Compensación: Descuenta horas (8 por día)
+                elif tipo == 'compensacion':
+                    saldos.horas_compensacion -= (solicitud.dias_solicitados * 8)
+                    saldos.save()
+                
+                # Sin goce, Duelo, Hora médica: No descuentan saldo
+                # (solo se aprueban)
+                
+                # Marcar como aprobada
+                solicitud.estado = 'Aprobado'
+                solicitud.aprobado_por = user
+                solicitud.fecha_aprobacion = timezone.now()
+                solicitud.save()
+                
+                # Log de auditoría
+                tipo_display = dict(SolicitudesPermiso.TIPOS_PERMISO).get(tipo, tipo)
+                Logs_Auditoria.objects.create(
+                    id_usuario_actor=user,
+                    accion='Solicitud Aprobada',
+                    detalle=f"Solicitud #{solicitud.pk} ({tipo_display}) de {solicitud.id_funcionario_solicitante.username} aprobada. Días: {solicitud.dias_solicitados}"
+                )
 
     return redirect('reporte_solicitudes')
+
+
+@login_required(login_url='login')
+def crear_solicitud_view(request):
+    """
+    Vista para que cualquier funcionario cree una solicitud.
+    Implementa auto-aprobación para Director y flujo directo para Subdirección.
+    """
+    if request.method == 'POST':
+        user = request.user
+        tipo = request.POST.get('tipo_permiso')
+        inicio_str = request.POST.get('fecha_inicio')
+        fin_str = request.POST.get('fecha_fin')
+        archivo = request.FILES.get('justificativo_archivo')
+        
+        try:
+            fecha_inicio = datetime.strptime(inicio_str, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fin_str, '%Y-%m-%d').date()
+            
+            if fecha_fin < fecha_inicio:
+                return render(request, 'gestion_solicitudes.html', {'error': 'La fecha de término no puede ser anterior a la de inicio.'})
+            
+            dias_solicitados = (fecha_fin - fecha_inicio).days + 1
+            
+            # Crear la solicitud
+            solicitud = SolicitudesPermiso.objects.create(
+                id_funcionario_solicitante=user,
+                tipo_permiso=tipo,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                dias_solicitados=dias_solicitados,
+                justificativo_archivo=archivo,
+                estado='Pendiente'
+            )
+            
+            # --- CASO ESPECIAL: Director solicita (Auto-aprobación) ---
+            if es_director(user):
+                # Auto-aprobar y descontar días
+                if tipo in ['vacaciones', 'administrativo']:
+                    campo = 'vacaciones_restantes' if tipo == 'vacaciones' else 'admin_restantes'
+                    Dias_Administrativos.objects.filter(id_funcionario=user).update(
+                        **{campo: F(campo) - dias_solicitados}
+                    )
+                
+                solicitud.estado = 'Aprobado'
+                solicitud.aprobado_por = user
+                solicitud.fecha_aprobacion = timezone.now()
+                solicitud.save()
+                
+                Logs_Auditoria.objects.create(
+                    id_usuario_actor=user,
+                    accion='Solicitud Auto-Aprobada (Director)',
+                    detalle=f"Director {user.username} auto-aprobó solicitud de {tipo}. Días: {dias_solicitados}"
+                )
+            
+            return redirect('historial_personal')
+            
+        except ValueError:
+            return render(request, 'gestion_solicitudes.html', {'error': 'Formato de fecha inválido.'})
+    
+    return render(request, 'gestion_solicitudes.html')
 
 # --- 4. Vistas de Admin (Protegidas) ---
 
@@ -696,15 +1161,24 @@ def historial_personal_view(request):
     Returns:
         HttpResponse: Renderiza 'historial_personal.html'.
     """
+    user = request.user
+    
     # 1. Solicitudes de permiso: propias del usuario logueado
-    solicitudes = SolicitudesPermiso.objects.filter(id_funcionario_solicitante=request.user).order_by('-fecha_solicitud')
+    solicitudes = SolicitudesPermiso.objects.filter(id_funcionario_solicitante=user).order_by('-fecha_solicitud')
     
     # 2. Historial de licencias: licencias emitidas a este funcionario
-    licencias_recibidas = Licencias.objects.filter(id_funcionario=request.user).order_by('-fecha_inicio')
+    licencias_recibidas = Licencias.objects.filter(id_funcionario=user).order_by('-fecha_inicio')
+    
+    # 3. Saldos del funcionario
+    saldos, created = Dias_Administrativos.objects.get_or_create(
+        id_funcionario=user,
+        defaults={'vacaciones_restantes': 15, 'admin_restantes': 6, 'horas_compensacion': 0}
+    )
     
     context = {
         'solicitudes': solicitudes,
         'licencias_recibidas': licencias_recibidas,
+        'saldos': saldos,
     }
     return render(request, 'historial_personal.html', context)
 
@@ -738,54 +1212,75 @@ def eventos_json_view(request):
         
     return JsonResponse(data, safe=False)
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def crear_comunicado_view(request):
     """
-    Vista para que Subdirección o Admin creen nuevos comunicados.
-    Registra la acción en los logs de auditoría.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        
-    Returns:
-        HttpResponse: Renderiza el formulario o redirige al dashboard.
+    Vista para crear comunicados.
+    - Director/Subdirección: Puede crear comunicados globales o para unidades específicas
+    - Jefe de Unidad: Solo puede crear comunicados para su propia unidad
     """
+    user = request.user
+    
+    # Verificar permisos: debe ser Subdirección o Jefe de Unidad
+    if not (es_subdireccion(user) or user.es_jefe_unidad):
+        return redirect('dashboard')
+    
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
         cuerpo = request.POST.get('cuerpo')
+        unidad_destino_id = request.POST.get('unidad_destino')
         
         if titulo and cuerpo:
-            Comunicados.objects.create(
+            # Determinar la unidad destino
+            unidad_destino = None
+            
+            if es_subdireccion(user):
+                # Director/Subdirección puede elegir: global (vacío) o unidad específica
+                if unidad_destino_id:
+                    unidad_destino = Unidades.objects.filter(pk=unidad_destino_id).first()
+            else:
+                # Jefe de Unidad: solo puede publicar para su unidad
+                unidad_destino = user.id_unidad
+            
+            comunicado = Comunicados.objects.create(
                 titulo=titulo,
                 cuerpo=cuerpo,
-                id_autor=request.user
+                id_autor=user,
+                unidad_destino=unidad_destino
             )
             
-            # Registrar en Logs (RF18)
+            # Registrar en Logs
+            destino_txt = "Global" if unidad_destino is None else unidad_destino.nombre_unidad
             Logs_Auditoria.objects.create(
-                id_usuario_actor=request.user,
+                id_usuario_actor=user,
                 accion='Creación de Comunicado',
-                detalle=f"Se publicó el comunicado: {titulo}"
+                detalle=f"Se publicó comunicado '{titulo}' para: {destino_txt}"
             )
             
             return redirect('dashboard')
-            
-    return render(request, 'crear_comunicado.html')
+    
+    # Contexto para el template
+    context = {
+        'es_subdireccion': es_subdireccion(user),
+        'es_jefe': user.es_jefe_unidad,
+        'unidad_usuario': user.id_unidad,
+        'unidades': Unidades.objects.filter(activa=True) if es_subdireccion(user) else None,
+    }
+    return render(request, 'crear_comunicado.html', context)
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def editar_comunicado_view(request, comunicado_id):
     """
     Vista para editar un comunicado existente.
-    Permite modificar título y cuerpo, registrando el cambio en logs.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        comunicado_id (int): ID del comunicado a editar.
-        
-    Returns:
-        HttpResponse: Renderiza el formulario de edición o redirige al dashboard.
+    - Director/Subdirección pueden editar cualquier comunicado
+    - Jefes de Unidad solo pueden editar sus propios comunicados
     """
     comunicado = get_object_or_404(Comunicados, pk=comunicado_id)
+    user = request.user
+    
+    # Verificar permisos: Subdirección o autor del comunicado
+    if not (es_subdireccion(user) or comunicado.id_autor == user):
+        return redirect('dashboard')
     
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
@@ -798,7 +1293,7 @@ def editar_comunicado_view(request, comunicado_id):
             
             # Registrar en Logs
             Logs_Auditoria.objects.create(
-                id_usuario_actor=request.user,
+                id_usuario_actor=user,
                 accion='Edición de Comunicado',
                 detalle=f"Se editó el comunicado ID {comunicado.id}: {titulo}"
             )
@@ -807,27 +1302,199 @@ def editar_comunicado_view(request, comunicado_id):
             
     return render(request, 'editar_comunicado.html', {'comunicado': comunicado})
 
-@user_passes_test(es_subdireccion, login_url='login')
+@login_required(login_url='login')
 def eliminar_comunicado_view(request, comunicado_id):
     """
     Vista para eliminar un comunicado.
-    Borra el comunicado y registra la acción en los logs.
-    
-    Args:
-        request (HttpRequest): La petición HTTP.
-        comunicado_id (int): ID del comunicado a eliminar.
-        
-    Returns:
-        HttpResponse: Redirección al dashboard.
+    - Director/Subdirección pueden eliminar cualquier comunicado
+    - Jefes de Unidad solo pueden eliminar sus propios comunicados
     """
     comunicado = get_object_or_404(Comunicados, pk=comunicado_id)
+    user = request.user
+    
+    # Verificar permisos: Subdirección o autor del comunicado
+    if not (es_subdireccion(user) or comunicado.id_autor == user):
+        return redirect('dashboard')
     
     # Registrar en Logs antes de borrar
     Logs_Auditoria.objects.create(
-        id_usuario_actor=request.user,
+        id_usuario_actor=user,
         accion='Eliminación de Comunicado',
         detalle=f"Se eliminó el comunicado: {comunicado.titulo}"
     )
     
     comunicado.delete()
     return redirect('dashboard')
+
+
+# =============================================================================
+# GESTIÓN DE USUARIOS (RRHH)
+# =============================================================================
+
+@login_required(login_url='login')
+def gestion_usuarios_view(request):
+    """
+    Vista para gestionar usuarios del sistema.
+    Solo accesible para Director, Subdirección y Encargado RRHH (nivel <= 2).
+    """
+    user = request.user
+    
+    if not es_subdireccion(user):
+        return redirect('dashboard')
+    
+    # Obtener todos los funcionarios (excepto superusuarios)
+    funcionarios = Funcionarios.objects.filter(is_superuser=False).select_related('id_rol', 'id_unidad').order_by('id_unidad__nombre_unidad', 'last_name')
+    unidades = Unidades.objects.filter(activa=True).order_by('nombre_unidad')
+    roles = Roles.objects.all().order_by('nivel_jerarquico')
+    
+    context = {
+        'funcionarios': funcionarios,
+        'unidades': unidades,
+        'roles': roles,
+    }
+    return render(request, 'gestion_usuarios.html', context)
+
+
+@login_required(login_url='login')
+def crear_usuario_view(request):
+    """
+    Vista para crear un nuevo usuario.
+    Solo accesible para Director, Subdirección y Encargado RRHH.
+    """
+    user = request.user
+    
+    if not es_subdireccion(user):
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email', '')
+        id_rol_id = request.POST.get('id_rol')
+        id_unidad_id = request.POST.get('id_unidad')
+        es_jefe = request.POST.get('es_jefe_unidad') == 'on'
+        
+        if username and password and first_name and last_name:
+            # Verificar que el username no exista
+            if Funcionarios.objects.filter(username=username).exists():
+                return render(request, 'crear_usuario.html', {
+                    'error': 'El nombre de usuario ya existe',
+                    'unidades': Unidades.objects.filter(activa=True),
+                    'roles': Roles.objects.all().order_by('nivel_jerarquico'),
+                })
+            
+            # Crear usuario
+            nuevo_usuario = Funcionarios.objects.create_user(
+                username=username,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                id_rol_id=id_rol_id if id_rol_id else None,
+                id_unidad_id=id_unidad_id if id_unidad_id else None,
+                es_jefe_unidad=es_jefe,
+                is_staff=es_jefe,  # Los jefes tienen is_staff
+            )
+            
+            # Crear registro de días administrativos
+            Dias_Administrativos.objects.create(id_funcionario=nuevo_usuario)
+            
+            # Registrar en logs
+            Logs_Auditoria.objects.create(
+                id_usuario_actor=user,
+                accion='Creación de Usuario',
+                detalle=f"Se creó el usuario: {username} ({first_name} {last_name}) - Unidad: {nuevo_usuario.id_unidad}"
+            )
+            
+            return redirect('gestion_usuarios')
+    
+    context = {
+        'unidades': Unidades.objects.filter(activa=True).order_by('nombre_unidad'),
+        'roles': Roles.objects.all().order_by('nivel_jerarquico'),
+    }
+    return render(request, 'crear_usuario.html', context)
+
+
+@login_required(login_url='login')
+def editar_usuario_view(request, usuario_id):
+    """
+    Vista para editar un usuario existente.
+    """
+    user = request.user
+    
+    if not es_subdireccion(user):
+        return redirect('dashboard')
+    
+    usuario = get_object_or_404(Funcionarios, pk=usuario_id)
+    
+    # No permitir editar superusuarios
+    if usuario.is_superuser:
+        return redirect('gestion_usuarios')
+    
+    if request.method == 'POST':
+        usuario.first_name = request.POST.get('first_name', usuario.first_name)
+        usuario.last_name = request.POST.get('last_name', usuario.last_name)
+        usuario.email = request.POST.get('email', usuario.email)
+        
+        id_rol_id = request.POST.get('id_rol')
+        id_unidad_id = request.POST.get('id_unidad')
+        es_jefe = request.POST.get('es_jefe_unidad') == 'on'
+        
+        usuario.id_rol_id = id_rol_id if id_rol_id else None
+        usuario.id_unidad_id = id_unidad_id if id_unidad_id else None
+        usuario.es_jefe_unidad = es_jefe
+        usuario.is_staff = es_jefe or (usuario.id_rol and usuario.id_rol.nivel_jerarquico <= 2)
+        
+        # Cambiar contraseña si se proporciona
+        nueva_password = request.POST.get('password')
+        if nueva_password:
+            usuario.set_password(nueva_password)
+        
+        usuario.save()
+        
+        # Registrar en logs
+        Logs_Auditoria.objects.create(
+            id_usuario_actor=user,
+            accion='Edición de Usuario',
+            detalle=f"Se editó el usuario: {usuario.username}"
+        )
+        
+        return redirect('gestion_usuarios')
+    
+    context = {
+        'usuario': usuario,
+        'unidades': Unidades.objects.filter(activa=True).order_by('nombre_unidad'),
+        'roles': Roles.objects.all().order_by('nivel_jerarquico'),
+    }
+    return render(request, 'editar_usuario.html', context)
+
+
+@login_required(login_url='login')
+def desactivar_usuario_view(request, usuario_id):
+    """
+    Vista para desactivar (no eliminar) un usuario.
+    """
+    user = request.user
+    
+    if not es_subdireccion(user):
+        return redirect('dashboard')
+    
+    usuario = get_object_or_404(Funcionarios, pk=usuario_id)
+    
+    # No permitir desactivar superusuarios ni a uno mismo
+    if usuario.is_superuser or usuario == user:
+        return redirect('gestion_usuarios')
+    
+    usuario.is_active = not usuario.is_active  # Toggle
+    usuario.save()
+    
+    estado = "activado" if usuario.is_active else "desactivado"
+    Logs_Auditoria.objects.create(
+        id_usuario_actor=user,
+        accion=f'Usuario {estado.capitalize()}',
+        detalle=f"Se {estado} el usuario: {usuario.username}"
+    )
+    
+    return redirect('gestion_usuarios')

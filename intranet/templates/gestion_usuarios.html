@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-users-cog"></i> Gestión de Usuarios</h1>
+    <p style="color: #7f8c8d;">Administra los funcionarios del sistema</p>
+</header>
+
+<section class="content-box">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Listado de Funcionarios</h2>
+        <a href="{% url 'crear_usuario' %}" class="action-button" style="text-decoration: none;">
+            <i class="fas fa-user-plus"></i> Nuevo Usuario
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+        <select id="filtroUnidad" onchange="filtrarTabla()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+            <option value="">Todas las Unidades</option>
+            {% for unidad in unidades %}
+            <option value="{{ unidad.nombre_unidad }}">{{ unidad.nombre_unidad }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" id="buscarUsuario" onkeyup="filtrarTabla()" placeholder="Buscar por nombre..." 
+               style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; min-width: 200px;">
+    </div>
+
+    {% if funcionarios %}
+    <table class="data-table" id="tablaUsuarios">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Nombre Completo</th>
+                <th>Unidad</th>
+                <th>Rol</th>
+                <th>Jefe</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for func in funcionarios %}
+            <tr data-unidad="{{ func.id_unidad.nombre_unidad|default:'' }}">
+                <td><strong>{{ func.username }}</strong></td>
+                <td>{{ func.first_name }} {{ func.last_name }}</td>
+                <td>
+                    {% if func.id_unidad %}
+                    <span style="background-color: #3498db; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">
+                        {{ func.id_unidad.nombre_unidad }}
+                    </span>
+                    {% else %}
+                    <span style="color: #7f8c8d;">Sin asignar</span>
+                    {% endif %}
+                </td>
+                <td>{{ func.id_rol.nombre_rol|default:"Sin rol" }}</td>
+                <td>
+                    {% if func.es_jefe_unidad %}
+                    <span style="color: #27ae60;"><i class="fas fa-check-circle"></i> Sí</span>
+                    {% else %}
+                    <span style="color: #7f8c8d;">No</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if func.is_active %}
+                    <span style="background-color: #27ae60; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">Activo</span>
+                    {% else %}
+                    <span style="background-color: #e74c3c; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'editar_usuario' func.pk %}" style="color: #f39c12; margin-right: 10px;" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'toggle_usuario' func.pk %}" 
+                       style="color: {% if func.is_active %}#e74c3c{% else %}#27ae60{% endif %};"
+                       onclick="return confirm('¿{% if func.is_active %}Desactivar{% else %}Activar{% endif %} este usuario?');"
+                       title="{% if func.is_active %}Desactivar{% else %}Activar{% endif %}">
+                        <i class="fas fa-{% if func.is_active %}user-slash{% else %}user-check{% endif %}"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-data">No hay funcionarios registrados.</p>
+    {% endif %}
+</section>
+
+<script>
+function filtrarTabla() {
+    const filtroUnidad = document.getElementById('filtroUnidad').value.toLowerCase();
+    const busqueda = document.getElementById('buscarUsuario').value.toLowerCase();
+    const filas = document.querySelectorAll('#tablaUsuarios tbody tr');
+    
+    filas.forEach(fila => {
+        const unidad = fila.getAttribute('data-unidad').toLowerCase();
+        const texto = fila.textContent.toLowerCase();
+        
+        const coincideUnidad = !filtroUnidad || unidad.includes(filtroUnidad);
+        const coincideBusqueda = !busqueda || texto.includes(busqueda);
+        
+        fila.style.display = (coincideUnidad && coincideBusqueda) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

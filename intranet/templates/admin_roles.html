@@ -33,7 +33,7 @@
                         <input type="hidden" name="user_id" value="{{ u.pk }}">
                         <select name="new_role" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
                             {% for r in roles %}
-                                <option value="{{ r.pk }}" {% if u.id_rol.pk == r.pk %}selected{% endif %}>{{ r.nombre_rol }}</option>
+                                <option value="{{ r.pk }}" {% if u.id_rol and u.id_rol.pk == r.pk %}selected{% endif %}>{{ r.nombre_rol }}</option>
                             {% endfor %}
                         </select>
                         <button type="submit" style="padding: 5px 10px; font-size: 0.8em;">Guardar</button>

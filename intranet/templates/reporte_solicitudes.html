@@ -2,13 +2,44 @@
 
 {% block content %}
 <header class="header">
-    <h1>Bandeja de Solicitudes Pendientes</h1>
+    <h1>Bandeja de Solicitudes</h1>
+    {% if es_jefe and not puede_aprobar_final %}
+    <p style="color: #7f8c8d;">Unidad: <strong>{{ unidad_usuario }}</strong> - Rol: Jefe de Unidad</p>
+    {% endif %}
 </header>
 
-<section class="content-box">
-    <h2>Solicitudes de Permiso por Aprobar</h2>
-    <p>Lista de solicitudes enviadas por el personal que requieren su revisión. La aprobación descontará los días del balance o registrará la Licencia Médica.</p>
+{% if es_jefe and not puede_aprobar_final %}
+<!-- Alerta informativa para Jefes de Unidad -->
+<div style="background: #e8f4fd; border-left: 4px solid #3498db; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+    <h4 style="margin: 0 0 0.5rem 0; color: #2980b9;"><i class="fas fa-info-circle"></i> Importante: Pre-Aprobación</h4>
+    <p style="margin: 0; color: #34495e;">
+        Como <strong>Jefe de Unidad</strong>, puedes <strong>pre-aprobar</strong> las solicitudes de tu equipo. 
+        Esto <strong>NO descuenta días</strong> del saldo del funcionario.<br>
+        <strong>Después de tu pre-aprobación</strong>, la solicitud pasa a <strong>Subdirección</strong> para la aprobación final.
+    </p>
+</div>
+{% endif %}
 
+<section class="content-box">
+    <h2>
+        {% if puede_aprobar_final %}
+            Solicitudes Pendientes de Aprobación Final
+        {% elif puede_pre_aprobar %}
+            Solicitudes de tu Unidad para Pre-Aprobar
+        {% else %}
+            Solicitudes
+        {% endif %}
+    </h2>
+    
+    <p>
+        {% if puede_aprobar_final %}
+            Solicitudes pre-aprobadas por Jefes de Unidad o que requieren aprobación directa.
+        {% elif puede_pre_aprobar %}
+            <strong>Flujo:</strong> Pendiente → <span style="color:#3498db;">Pre-Aprobado (tú)</span> → Aprobado (Subdirección)
+        {% endif %}
+    </p>
+
+    {% if puede_aprobar_final %}
     <div style="margin-bottom: 1rem;">
         <a href="{% url 'exportar_solicitudes_excel' %}" class="btn btn-success">
             <i class="fas fa-file-excel"></i> Exportar a Excel
@@ -17,54 +48,101 @@
             <i class="fas fa-print"></i> Imprimir
         </button>
     </div>
+    {% endif %}
 
     {% if solicitudes %}
     <table class="data-table">
         <thead>
             <tr>
                 <th>Funcionario</th>
+                <th>Unidad</th>
                 <th>Tipo</th>
                 <th>Desde</th>
                 <th>Hasta</th>
                 <th>Días</th>
-                <th>Fecha Solicitud</th>
                 <th>Estado</th>
-                <th>Justificativo</th> <th>Acción</th> 
+                <th>Pre-Aprobado por</th>
+                <th>Justificativo</th>
+                <th>Acciones</th> 
             </tr>
         </thead>
         <tbody>
             {% for sol in solicitudes %}
             <tr>
-                <td>{{ sol.id_funcionario_solicitante.first_name }} {{ sol.id_funcionario_solicitante.last_name }} ({{ sol.id_funcionario_solicitante.username }})</td>
-                <td>{{ sol.tipo_permiso|capfirst }}</td>
-                <td>{{ sol.fecha_inicio|date:"Y-m-d" }}</td>
-                <td>{{ sol.fecha_fin|date:"Y-m-d" }}</td>
+                <td>{{ sol.id_funcionario_solicitante.first_name }} {{ sol.id_funcionario_solicitante.last_name }}<br><small>({{ sol.id_funcionario_solicitante.username }})</small></td>
+                <td>{{ sol.id_funcionario_solicitante.id_unidad.nombre_unidad|default:"Sin unidad" }}</td>
+                <td>
+                    <span style="
+                        {% if sol.tipo_permiso == 'administrativo' %}background-color: #27ae60;{% elif sol.tipo_permiso == 'vacaciones' %}background-color: #3498db;{% elif sol.tipo_permiso == 'sin_goce' %}background-color: #95a5a6;{% elif sol.tipo_permiso == 'hora_medica' %}background-color: #9b59b6;{% elif sol.tipo_permiso == 'licencia' %}background-color: #e67e22;{% elif sol.tipo_permiso == 'duelo' %}background-color: #34495e;{% elif sol.tipo_permiso == 'compensacion' %}background-color: #1abc9c;{% else %}background-color: #888;{% endif %}
+                        color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                        {{ sol.get_tipo_permiso_display }}
+                    </span>
+                    {% if sol.tipo_permiso == 'hora_medica' and sol.horas_solicitadas %}
+                        <br><small>({{ sol.horas_solicitadas }}h)</small>
+                    {% endif %}
+                </td>
+                <td>{{ sol.fecha_inicio|date:"d/m/Y" }}</td>
+                <td>{{ sol.fecha_fin|date:"d/m/Y" }}</td>
                 <td>{{ sol.dias_solicitados }}</td>
-                <td>{{ sol.fecha_solicitud|date:"Y-m-d H:i" }}</td>
-                <td><span class="status-{{ sol.estado|lower }}">{{ sol.estado }}</span></td>
-                
+                <td>
+                    <span class="status-{{ sol.estado|lower }}" style="
+                        {% if sol.estado == 'Pendiente' %}background-color: #f39c12;{% elif sol.estado == 'Pre-Aprobado' %}background-color: #3498db;{% elif sol.estado == 'Aprobado' %}background-color: #27ae60;{% elif sol.estado == 'Rechazado' %}background-color: #e74c3c;{% else %}background-color: #888;{% endif %}
+                        color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                        {{ sol.estado }}
+                    </span>
+                </td>
+                <td>
+                    {% if sol.pre_aprobado_por %}
+                        {{ sol.pre_aprobado_por.username }}<br>
+                        <small>{{ sol.fecha_pre_aprobacion|date:"d/m/Y H:i" }}</small>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>
                     {% if sol.justificativo_archivo %}
                         <a href="{{ sol.justificativo_archivo.url }}" target="_blank" class="document-link">
-                            Ver Archivo
+                            <i class="fas fa-file"></i> Ver
                         </a>
                     {% else %}
-                        No aplica
+                        -
                     {% endif %}
                 </td>
                 
                 <td>
-                    {% if sol.estado == 'Pendiente' %}
+                    {% if sol.estado == 'Pendiente' and puede_pre_aprobar %}
+                    <!-- Botón PRE-APROBAR (Solo Jefe de Unidad) -->
                     <form method="POST" action="{% url 'aprobar_solicitud' sol.pk %}" style="display:inline;">
                         {% csrf_token %}
+                        <input type="hidden" name="accion" value="pre_aprobar">
                         <button type="submit" class="action-button small" 
-                                style="background-color: #4CAF50; color: white;"
-                                onclick="return confirm('¿Seguro que desea APROBAR esta solicitud?');">
-                            Aprobar
+                                style="background-color: #3498db; color: white; margin: 2px;"
+                                onclick="return confirm('¿PRE-APROBAR esta solicitud?\n\n⚠️ Esto NO descuenta días del funcionario.\n\nLa solicitud pasará a Subdirección para aprobación final.');">
+                            <i class="fas fa-clipboard-check"></i> Pre-Aprobar
                         </button>
                     </form>
-                    {% else %}
-                        -
+                    {% endif %}
+                    
+                    {% if puede_aprobar_final and sol.estado in 'Pendiente,Pre-Aprobado' %}
+                    <!-- Botón APROBAR FINAL (Solo Subdirección/Director) -->
+                    <form method="POST" action="{% url 'aprobar_solicitud' sol.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="aprobar">
+                        <button type="submit" class="action-button small" 
+                                style="background-color: #27ae60; color: white; margin: 2px;"
+                                onclick="return confirm('¿APROBAR esta solicitud? Se descontarán {{ sol.dias_solicitados }} día(s) del balance.');">
+                            <i class="fas fa-check-double"></i> Aprobar
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if sol.estado == 'Pendiente' or sol.estado == 'Pre-Aprobado' %}
+                    <!-- Botón RECHAZAR (Cualquier nivel puede rechazar) -->
+                    <button type="button" class="action-button small" 
+                            style="background-color: #e74c3c; color: white; margin: 2px;"
+                            onclick="mostrarModalRechazo({{ sol.pk }});">
+                        <i class="fas fa-times"></i> Rechazar
+                    </button>
                     {% endif %}
                 </td>
             </tr>
@@ -72,8 +150,47 @@
         </tbody>
     </table>
     {% else %}
-    <p class="no-data">No hay solicitudes de permiso pendientes en este momento.</p>
+    <p class="no-data">
+        {% if puede_pre_aprobar %}
+            No hay solicitudes pendientes de tu unidad en este momento.
+        {% else %}
+            No hay solicitudes pendientes de aprobación en este momento.
+        {% endif %}
+    </p>
     {% endif %}
 </section>
+
+<!-- Modal para Rechazar con comentario -->
+<div id="modalRechazo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; max-width:500px; margin:10% auto; padding:20px; border-radius:8px;">
+        <h3>Rechazar Solicitud</h3>
+        <form id="formRechazo" method="POST" action="">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="rechazar">
+            <div style="margin-bottom:15px;">
+                <label for="comentario_rechazo">Motivo del rechazo:</label>
+                <textarea name="comentario_rechazo" id="comentario_rechazo" rows="4" 
+                          style="width:100%; padding:8px;" required
+                          placeholder="Ingrese el motivo del rechazo..."></textarea>
+            </div>
+            <button type="submit" style="background:#e74c3c; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer;">
+                Confirmar Rechazo
+            </button>
+            <button type="button" onclick="cerrarModalRechazo()" style="padding:10px 20px; border:1px solid #ccc; border-radius:4px; cursor:pointer; margin-left:10px;">
+                Cancelar
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function mostrarModalRechazo(solicitudId) {
+    document.getElementById('formRechazo').action = '/aprobar_solicitud/' + solicitudId + '/';
+    document.getElementById('modalRechazo').style.display = 'block';
+}
+function cerrarModalRechazo() {
+    document.getElementById('modalRechazo').style.display = 'none';
+}
+</script>
 
 {% endblock %}

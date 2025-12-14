@@ -2,147 +2,603 @@
 {% load static %}
 
 {% block content %}
-<header class="header">
-    <h1>Repositorio Documental</h1>
-</header>
-
-<section class="content-box">
+<style>
+    .repo-header {
+        background: linear-gradient(135deg, #1E4A7B 0%, #2d6da8 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .repo-header h1 {
+        margin: 0;
+        font-size: 1.8em;
+    }
+    .repo-header .stats {
+        display: flex;
+        gap: 30px;
+    }
+    .repo-header .stat-item {
+        text-align: center;
+    }
+    .repo-header .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+    }
+    .repo-header .stat-label {
+        font-size: 0.85em;
+        opacity: 0.9;
+    }
     
-    <!-- Formulario de Carga (Colapsable o visible) -->
-    <!-- Permite subir archivos con metadatos y configuración de privacidad -->
-    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eee;">
-        <h3 style="margin-top: 0; color: #1E4A7B;">Subir Nuevo Documento</h3>
-        <form method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+    /* Formulario colapsable */
+    .upload-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    .upload-toggle {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        transition: background 0.2s;
+    }
+    .upload-toggle:hover {
+        background: #e9ecef;
+    }
+    .upload-toggle h3 {
+        margin: 0;
+        color: #1E4A7B;
+        font-size: 1.1em;
+    }
+    .upload-toggle i {
+        transition: transform 0.3s;
+    }
+    .upload-toggle.active i {
+        transform: rotate(180deg);
+    }
+    .upload-form {
+        padding: 20px;
+        display: none;
+    }
+    .upload-form.show {
+        display: block;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    .form-group label {
+        display: block;
+        font-size: 0.9em;
+        color: #555;
+        margin-bottom: 6px;
+        font-weight: 500;
+    }
+    .form-group input[type="text"],
+    .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.95em;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #1E4A7B;
+        box-shadow: 0 0 0 3px rgba(30,74,123,0.1);
+    }
+    .visibility-options {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    .visibility-options label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        display: block;
+    }
+    .visibility-choices {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .visibility-choice {
+        flex: 1;
+        min-width: 140px;
+        padding: 12px 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+        background: white;
+    }
+    .visibility-choice:hover {
+        border-color: #1E4A7B;
+    }
+    .visibility-choice.selected {
+        border-color: #1E4A7B;
+        background: rgba(30,74,123,0.05);
+    }
+    .visibility-choice input {
+        display: none;
+    }
+    .visibility-choice i {
+        font-size: 1.5em;
+        display: block;
+        margin-bottom: 5px;
+    }
+    .visibility-choice .choice-title {
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+    .visibility-choice .choice-desc {
+        font-size: 0.75em;
+        color: #666;
+    }
+    .btn-upload {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+    }
+    
+    /* Filtros y búsqueda */
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    .search-bar {
+        margin-bottom: 15px;
+    }
+    .search-input-wrapper {
+        position: relative;
+        max-width: 500px;
+    }
+    .search-input-wrapper i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+    .search-input-wrapper input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 1px solid #ddd;
+        border-radius: 25px;
+        font-size: 0.95em;
+    }
+    .category-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .filter-pill {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid #ddd;
+        background: white;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: #555;
+        white-space: nowrap;
+    }
+    .filter-pill:hover, .filter-pill.active {
+        background: #1E4A7B;
+        color: white;
+        border-color: #1E4A7B;
+    }
+    
+    /* Grid de documentos */
+    .docs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    .doc-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .doc-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    .doc-card-header {
+        padding: 20px;
+        text-align: center;
+        background: #f8f9fa;
+    }
+    .doc-card-header i {
+        font-size: 3em;
+    }
+    .doc-card-header .fa-file-pdf { color: #e74c3c; }
+    .doc-card-header .fa-file-word { color: #2980b9; }
+    .doc-card-header .fa-file-excel { color: #27ae60; }
+    .doc-card-header .fa-file-powerpoint { color: #e67e22; }
+    .doc-card-header .fa-file-image { color: #9b59b6; }
+    .doc-card-header .fa-file-archive { color: #f39c12; }
+    .doc-card-header .fa-file { color: #95a5a6; }
+    
+    .doc-card-body {
+        padding: 15px 20px;
+    }
+    .doc-card-body h4 {
+        margin: 0 0 8px 0;
+        font-size: 1em;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .doc-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8em;
+        color: #888;
+        margin-bottom: 10px;
+    }
+    .doc-category {
+        background: #e8f4f8;
+        color: #1E4A7B;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.85em;
+    }
+    .doc-visibility {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+    }
+    .doc-visibility.public {
+        background: #d4edda;
+        color: #155724;
+    }
+    .doc-visibility.shared {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .doc-visibility.private {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .doc-card-actions {
+        padding: 12px 20px;
+        background: #f8f9fa;
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid #eee;
+    }
+    .btn-download {
+        background: #1E4A7B;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85em;
+        transition: background 0.2s;
+    }
+    .btn-download:hover {
+        background: #16395f;
+        color: white;
+    }
+    .btn-delete {
+        background: none;
+        border: 1px solid #e74c3c;
+        color: #e74c3c;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85em;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-delete:hover {
+        background: #e74c3c;
+        color: white;
+    }
+    
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .empty-state i {
+        font-size: 4em;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+    .empty-state h3 {
+        color: #666;
+        margin-bottom: 10px;
+    }
+    .empty-state p {
+        color: #999;
+    }
+    
+    #rolesSelector {
+        margin-top: 15px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        border: 1px dashed #ddd;
+    }
+</style>
+
+<!-- Header con estadísticas -->
+<div class="repo-header">
+    <div>
+        <h1><i class="fas fa-folder-open"></i> Repositorio Documental</h1>
+        <p style="margin: 5px 0 0 0; opacity: 0.9;">Documentos, protocolos y formularios del CESFAM</p>
+    </div>
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-number">{{ documentos|length }}</div>
+            <div class="stat-label">Documentos</div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de subida colapsable -->
+<div class="upload-section">
+    <div class="upload-toggle" onclick="toggleUpload()">
+        <h3><i class="fas fa-cloud-upload-alt"></i> Subir Nuevo Documento</h3>
+        <i class="fas fa-chevron-down"></i>
+    </div>
+    <div class="upload-form" id="uploadForm">
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            <div style="flex: 1; min-width: 200px;">
-                <label style="display: block; font-size: 0.9em; margin-bottom: 5px;">Título:</label>
-                <input type="text" name="titulo" required class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div style="flex: 1; min-width: 150px;">
-                <label style="display: block; font-size: 0.9em; margin-bottom: 5px;">Categoría:</label>
-                <select name="categoria" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    <option value="General">General</option>
-                    <option value="Protocolo">Protocolo</option>
-                    <option value="Formulario">Formulario</option>
-                    <option value="Personal">Personal</option>
-                </select>
-            </div>
-            <div style="flex: 1; min-width: 200px;">
-                <label style="display: block; font-size: 0.9em; margin-bottom: 5px;">Archivo:</label>
-                <input type="file" name="archivo" required style="width: 100%;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-heading"></i> Título del Documento</label>
+                    <input type="text" name="titulo" required placeholder="Ej: Protocolo GES Diabetes">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-tag"></i> Categoría</label>
+                    <select name="categoria">
+                        <option value="General">General</option>
+                        <option value="Protocolo">Protocolo Clínico</option>
+                        <option value="Formulario">Formulario</option>
+                        <option value="Normativa">Normativa MINSAL</option>
+                        <option value="Capacitacion">Material Capacitación</option>
+                        <option value="Administrativo">Administrativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-file"></i> Archivo</label>
+                    <input type="file" name="archivo" required style="padding: 8px;">
+                </div>
             </div>
             
-            <!-- Sección de Visibilidad -->
-            <!-- Controla quién puede ver el documento: Privado, Público o Roles Específicos -->
-            <div style="width: 100%; margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Visibilidad:</label>
+            <div class="visibility-options">
+                <label><i class="fas fa-eye"></i> ¿Quién puede ver este documento?</label>
+                <div class="visibility-choices">
+                    <!-- Opción siempre disponible: Privado -->
+                    <label class="visibility-choice selected" onclick="selectVisibility(this, 'privado')">
+                        <input type="radio" name="visibilidad" value="privado" checked>
+                        <i class="fas fa-lock" style="color: #e74c3c;"></i>
+                        <div class="choice-title">Privado</div>
+                        <div class="choice-desc">Solo yo</div>
+                    </label>
+                    
+                    <!-- Opción para todos: Mi Unidad -->
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'mi_unidad')">
+                        <input type="radio" name="visibilidad" value="mi_unidad">
+                        <i class="fas fa-users" style="color: #3498db;"></i>
+                        <div class="choice-title">Mi Unidad</div>
+                        <div class="choice-desc">Colegas de mi área</div>
+                    </label>
+                    
+                    <!-- Para funcionarios base: Enviar a jefatura -->
+                    {% if not es_jefe and not es_superior %}
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'jefatura')">
+                        <input type="radio" name="visibilidad" value="jefatura">
+                        <i class="fas fa-arrow-up" style="color: #9b59b6;"></i>
+                        <div class="choice-title">Jefatura</div>
+                        <div class="choice-desc">Mi jefe y superiores</div>
+                    </label>
+                    {% endif %}
+                    
+                    <!-- Para Jefes: Otros Jefes -->
+                    {% if es_jefe %}
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'otros_jefes')">
+                        <input type="radio" name="visibilidad" value="otros_jefes">
+                        <i class="fas fa-handshake" style="color: #f39c12;"></i>
+                        <div class="choice-title">Otros Jefes</div>
+                        <div class="choice-desc">Jefes + Superiores</div>
+                    </label>
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'publico')">
+                        <input type="radio" name="visibilidad" value="publico">
+                        <i class="fas fa-globe" style="color: #27ae60;"></i>
+                        <div class="choice-title">Público</div>
+                        <div class="choice-desc">Todo el CESFAM</div>
+                    </label>
+                    {% endif %}
+                    
+                    <!-- Para Subdirección/Director: Más opciones -->
+                    {% if es_superior %}
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'unidad_especifica')">
+                        <input type="radio" name="visibilidad" value="unidad_especifica">
+                        <i class="fas fa-bullseye" style="color: #e67e22;"></i>
+                        <div class="choice-title">Unidad</div>
+                        <div class="choice-desc">Área específica</div>
+                    </label>
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'solo_jefes')">
+                        <input type="radio" name="visibilidad" value="solo_jefes">
+                        <i class="fas fa-user-tie" style="color: #9b59b6;"></i>
+                        <div class="choice-title">Solo Jefes</div>
+                        <div class="choice-desc">Jefes de unidad</div>
+                    </label>
+                    <label class="visibility-choice" onclick="selectVisibility(this, 'publico')">
+                        <input type="radio" name="visibilidad" value="publico">
+                        <i class="fas fa-globe" style="color: #27ae60;"></i>
+                        <div class="choice-title">Público</div>
+                        <div class="choice-desc">Todo el CESFAM</div>
+                    </label>
+                    {% endif %}
+                </div>
                 
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <label style="cursor: pointer;">
-                        <input type="radio" name="visibilidad" value="privado" checked onclick="toggleRoles(false)"> 
-                        <i class="fas fa-lock"></i> Privado (Solo yo)
+                <!-- Selector de unidad específica (solo para superiores) -->
+                {% if es_superior %}
+                <div id="unidadSelector" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px; border: 1px dashed #ddd;">
+                    <label style="font-size: 0.9em; color: #666; display: block; margin-bottom: 10px;">
+                        <i class="fas fa-building"></i> Selecciona la unidad destino:
                     </label>
-                    
-                    <label style="cursor: pointer;">
-                        <input type="radio" name="visibilidad" value="publico" onclick="toggleRoles(false)"> 
-                        <i class="fas fa-globe"></i> Público (Todos)
-                    </label>
-                    
-                    <label style="cursor: pointer;">
-                        <input type="radio" name="visibilidad" value="roles" onclick="toggleRoles(true)"> 
-                        <i class="fas fa-users"></i> Compartir con...
-                    </label>
-                </div>
-
-                <!-- Selector de Roles (Oculto por defecto, se activa con JS) -->
-                <div id="rolesSelector" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
-                    <span style="font-size: 0.9em; color: #666;">Selecciona los roles que podrán ver este documento:</span>
-                    <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
-                        {% for rol in roles %}
-                        <label style="background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 0.9em; cursor: pointer;">
-                            <input type="checkbox" name="roles_ids" value="{{ rol.id }}"> {{ rol.nombre_rol }}
-                        </label>
+                    <select name="unidad_destino" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="">-- Seleccionar unidad --</option>
+                        {% for unidad in unidades %}
+                        <option value="{{ unidad.id }}">{{ unidad.nombre_unidad }}</option>
                         {% endfor %}
-                    </div>
+                    </select>
                 </div>
+                {% endif %}
             </div>
-
-            <button type="submit" class="btn-primary" style="padding: 10px 20px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                <i class="fas fa-upload"></i> Subir
+            
+            <button type="submit" class="btn-upload">
+                <i class="fas fa-upload"></i> Subir Documento
             </button>
         </form>
     </div>
+</div>
 
-    <!-- Script para mostrar/ocultar el selector de roles -->
-    <script>
-        function toggleRoles(show) {
-            const selector = document.getElementById('rolesSelector');
-            selector.style.display = show ? 'block' : 'none';
-        }
-    </script>
-
-    <h2>Buscar Documentos</h2>
-
-    <!-- Barra de Búsqueda -->
-    <form method="GET" action="{% url 'documentos' %}">
-        <input type="text" name="q" placeholder="Buscar protocolo, formulario, guía..." class="form-control" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px;" value="{{ request.GET.q|default:'' }}">
+<!-- Filtros y búsqueda -->
+<div class="filter-section">
+    <form method="GET" action="{% url 'documentos' %}" class="search-bar">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" name="q" placeholder="Buscar documentos..." value="{{ request.GET.q|default:'' }}">
+        </div>
     </form>
+    <div class="category-filters">
+        <a href="{% url 'documentos' %}" class="filter-pill {% if not request.GET.cat %}active{% endif %}">Todos</a>
+        <a href="?cat=Protocolo" class="filter-pill {% if request.GET.cat == 'Protocolo' %}active{% endif %}">
+            <i class="fas fa-notes-medical"></i> Protocolos
+        </a>
+        <a href="?cat=Formulario" class="filter-pill {% if request.GET.cat == 'Formulario' %}active{% endif %}">
+            <i class="fas fa-file-alt"></i> Formularios
+        </a>
+        <a href="?cat=Normativa" class="filter-pill {% if request.GET.cat == 'Normativa' %}active{% endif %}">
+            <i class="fas fa-gavel"></i> Normativas
+        </a>
+    </div>
+</div>
 
-    <table style="width:100%; border-collapse: collapse;">
-        <thead style="text-align: left;">
-            <tr>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tipo</th>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Documento</th>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Categoría</th>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Autor</th>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Estado</th>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Fecha Carga</th>
-                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for doc in documentos %}
-            <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                    <i class="{{ doc.get_icon }} fa-lg" title="{{ doc.get_extension }}"></i>
-                </td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ doc.titulo }}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ doc.categoria }}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                    {% if doc.id_autor_carga == request.user %}
-                        <b>Tú</b>
-                    {% else %}
-                        {{ doc.id_autor_carga.first_name }} {{ doc.id_autor_carga.last_name }}
-                    {% endif %}
-                </td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                    {% if doc.publico %}
-                        <span style="background-color: #d4edda; color: #155724; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">Público</span>
-                    {% elif doc.roles_permitidos.exists %}
-                        <span style="background-color: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;" title="Compartido con: {% for r in doc.roles_permitidos.all %}{{ r.nombre_rol }} {% endfor %}">Compartido</span>
-                    {% else %}
-                        <span style="background-color: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">Privado</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ doc.fecha_carga|date:"d-m-Y" }}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                    <a href="{{ doc.ruta_archivo.url }}" target="_blank" style="margin-right: 10px; color: #1E4A7B; text-decoration: none;">
-                        <i class="fas fa-download"></i> Descargar
-                    </a>
-                    {% if doc.id_autor_carga == request.user or user.is_superuser %}
-                        <a href="{% url 'eliminar_documento' doc.id %}" onclick="return confirm('¿Estás seguro de eliminar este documento?');" style="color: #e74c3c; text-decoration: none;">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </a>
-                    {% endif %}
-                </td> 
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" style="padding: 10px; text-align: center;">No hay documentos cargados en el repositorio.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</section>
+<!-- Grid de documentos -->
+{% if documentos %}
+<div class="docs-grid">
+    {% for doc in documentos %}
+    <div class="doc-card">
+        <div class="doc-card-header">
+            <i class="{{ doc.get_icon }}"></i>
+        </div>
+        <div class="doc-card-body">
+            <h4 title="{{ doc.titulo }}">{{ doc.titulo }}</h4>
+            <div class="doc-meta">
+                <span class="doc-category">{{ doc.categoria }}</span>
+                <span>{{ doc.fecha_carga|date:"d/m/Y" }}</span>
+            </div>
+            <div style="font-size: 0.85em; color: #666; margin-bottom: 8px;">
+                <i class="fas fa-user"></i>
+                {% if doc.id_autor_carga == request.user %}
+                    <strong>Tú</strong>
+                {% else %}
+                    {{ doc.id_autor_carga.first_name|default:doc.id_autor_carga.username }}
+                {% endif %}
+            </div>
+            {% if doc.publico %}
+                <span class="doc-visibility public"><i class="fas fa-globe"></i> Público</span>
+            {% elif doc.compartir_unidad %}
+                <span class="doc-visibility shared"><i class="fas fa-users"></i> Mi Unidad</span>
+            {% elif doc.compartir_jefes %}
+                <span class="doc-visibility shared"><i class="fas fa-handshake"></i> Jefes</span>
+            {% elif doc.compartir_superiores %}
+                <span class="doc-visibility shared"><i class="fas fa-arrow-up"></i> Jefatura</span>
+            {% elif doc.unidad_destino %}
+                <span class="doc-visibility shared"><i class="fas fa-bullseye"></i> {{ doc.unidad_destino.nombre_unidad }}</span>
+            {% else %}
+                <span class="doc-visibility private"><i class="fas fa-lock"></i> Privado</span>
+            {% endif %}
+        </div>
+        <div class="doc-card-actions">
+            <a href="{{ doc.ruta_archivo.url }}" target="_blank" class="btn-download">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            {% if doc.id_autor_carga == request.user or user.is_superuser %}
+            <a href="{% url 'eliminar_documento' doc.id %}" onclick="return confirm('¿Eliminar este documento?');" class="btn-delete">
+                <i class="fas fa-trash"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-folder-open"></i>
+    <h3>No hay documentos</h3>
+    <p>Aún no se han subido documentos al repositorio.<br>¡Sé el primero en compartir un documento!</p>
+</div>
+{% endif %}
+
+<script>
+function toggleUpload() {
+    const form = document.getElementById('uploadForm');
+    const toggle = document.querySelector('.upload-toggle');
+    form.classList.toggle('show');
+    toggle.classList.toggle('active');
+}
+
+function selectVisibility(element, value) {
+    // Quitar selección anterior
+    document.querySelectorAll('.visibility-choice').forEach(el => el.classList.remove('selected'));
+    // Agregar selección actual
+    element.classList.add('selected');
+    // Marcar radio
+    element.querySelector('input').checked = true;
+    
+    // Mostrar/ocultar selector de unidad específica
+    const unidadSelector = document.getElementById('unidadSelector');
+    if (unidadSelector) {
+        unidadSelector.style.display = (value === 'unidad_especifica') ? 'block' : 'none';
+    }
+}
+</script>
 
 {% endblock %}

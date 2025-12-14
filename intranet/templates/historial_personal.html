@@ -5,9 +5,30 @@
     <h1>Mi Historial de Solicitudes</h1>
 </header>
 
+<!-- Mostrar saldos disponibles -->
+{% if saldos %}
+<section class="content-box" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin-bottom: 1rem;">
+    <h3 style="margin-bottom: 1rem;"><i class="fas fa-chart-pie"></i> Mis Saldos Disponibles</h3>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div style="background: white; padding: 1rem; border-radius: 8px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #3498db; font-size: 2rem; font-weight: bold;">{{ saldos.vacaciones_restantes }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Vacaciones</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #27ae60; font-size: 2rem; font-weight: bold;">{{ saldos.admin_restantes }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Días Administrativos</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #9b59b6; font-size: 2rem; font-weight: bold;">{{ saldos.horas_compensacion }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Horas Compensación</div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
 <section class="content-box" style="margin-bottom: 30px;">
-    <h2>Solicitudes de Días y Vacaciones</h2>
-    <p>Aquí puede revisar el estado (Pendiente, Aprobado o Rechazado) de sus permisos.</p>
+    <h2>Mis Solicitudes de Permiso</h2>
+    <p>Aquí puede revisar el estado de sus solicitudes (Pendiente → Pre-Aprobado → Aprobado o Rechazado).</p>
 
     {% if solicitudes %}
     <table class="data-table">
@@ -18,20 +39,50 @@
                 <th>Días</th>
                 <th>Fecha Solicitud</th>
                 <th>Estado</th>
+                <th>Observación</th>
             </tr>
         </thead>
         <tbody>
             {% for sol in solicitudes %}
             <tr>
-                <td>{{ sol.tipo_permiso|capfirst }}</td>
-                <td>{{ sol.fecha_inicio|date:"Y-m-d" }}</td>
+                <td>
+                    <span style="
+                        {% if sol.tipo_permiso == 'administrativo' %}background-color: #27ae60;{% endif %}
+                        {% if sol.tipo_permiso == 'vacaciones' %}background-color: #3498db;{% endif %}
+                        {% if sol.tipo_permiso == 'sin_goce' %}background-color: #95a5a6;{% endif %}
+                        {% if sol.tipo_permiso == 'hora_medica' %}background-color: #9b59b6;{% endif %}
+                        {% if sol.tipo_permiso == 'licencia' %}background-color: #e67e22;{% endif %}
+                        {% if sol.tipo_permiso == 'duelo' %}background-color: #34495e;{% endif %}
+                        {% if sol.tipo_permiso == 'compensacion' %}background-color: #1abc9c;{% endif %}
+                        color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                        {{ sol.get_tipo_permiso_display }}
+                    </span>
+                    {% if sol.tipo_permiso == 'hora_medica' and sol.horas_solicitadas %}
+                        <br><small>({{ sol.horas_solicitadas }}h)</small>
+                    {% endif %}
+                </td>
+                <td>{{ sol.fecha_inicio|date:"d/m/Y" }}</td>
                 <td>{{ sol.dias_solicitados }}</td>
-                <td>{{ sol.fecha_solicitud|date:"Y-m-d H:i" }}</td>
+                <td>{{ sol.fecha_solicitud|date:"d/m/Y H:i" }}</td>
                 
                 <td>
-                    <span class="status-{{ sol.estado|lower }}">
+                    <span style="
+                        {% if sol.estado == 'Pendiente' %}background-color: #f39c12;{% endif %}
+                        {% if sol.estado == 'Pre-Aprobado' %}background-color: #3498db;{% endif %}
+                        {% if sol.estado == 'Aprobado' %}background-color: #27ae60;{% endif %}
+                        {% if sol.estado == 'Rechazado' %}background-color: #e74c3c;{% endif %}
+                        color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
                         {{ sol.estado }}
                     </span>
+                </td>
+                <td>
+                    {% if sol.estado == 'Rechazado' and sol.comentario_rechazo %}
+                        <small style="color: #e74c3c;">{{ sol.comentario_rechazo|truncatewords:10 }}</small>
+                    {% elif sol.observaciones %}
+                        <small>{{ sol.observaciones|truncatewords:5 }}</small>
+                    {% else %}
+                        -
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -60,8 +111,14 @@
             <tr>
                 <td>{{ lic.fecha_inicio|date:"Y-m-d" }}</td>
                 <td>{{ lic.fecha_fin|date:"Y-m-d" }}</td>
-                <td>{{ lic.id_subdireccion_carga.username }}</td>
-                <td><a href="{{ lic.ruta_foto_licencia.url }}" target="_blank">Ver Archivo</a></td>
+                <td>{{ lic.id_subdireccion_carga.username|default:"N/A" }}</td>
+                <td>
+                    {% if lic.ruta_foto_licencia %}
+                        <a href="{{ lic.ruta_foto_licencia.url }}" target="_blank">Ver Archivo</a>
+                    {% else %}
+                        <span style="color: #888;">Sin archivo</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

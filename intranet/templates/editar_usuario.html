@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-user-edit"></i> Editar Usuario</h1>
+    <p style="color: #7f8c8d;">Editando: <strong>{{ usuario.username }}</strong></p>
+</header>
+
+<section class="content-box">
+    <form method="POST" class="form-container">
+        {% csrf_token %}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label>Nombre de Usuario</label>
+                <input type="text" value="{{ usuario.username }}" disabled 
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background-color: #f5f5f5;">
+                <small style="color: #7f8c8d;">El nombre de usuario no se puede cambiar</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Nueva Contraseña</label>
+                <input type="password" id="password" name="password" 
+                       placeholder="Dejar vacío para mantener la actual" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div class="form-group">
+                <label for="first_name">Nombre *</label>
+                <input type="text" id="first_name" name="first_name" required value="{{ usuario.first_name }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div class="form-group">
+                <label for="last_name">Apellido *</label>
+                <input type="text" id="last_name" name="last_name" required value="{{ usuario.last_name }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Correo Electrónico</label>
+                <input type="email" id="email" name="email" value="{{ usuario.email }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_unidad">Unidad / Departamento</label>
+                <select id="id_unidad" name="id_unidad" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <option value="">Sin unidad asignada</option>
+                    {% for unidad in unidades %}
+                    <option value="{{ unidad.pk }}" {% if usuario.id_unidad and usuario.id_unidad.pk == unidad.pk %}selected{% endif %}>
+                        {{ unidad.nombre_unidad }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_rol">Rol</label>
+                <select id="id_rol" name="id_rol" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <option value="">Sin rol asignado</option>
+                    {% for rol in roles %}
+                    <option value="{{ rol.pk }}" {% if usuario.id_rol and usuario.id_rol.pk == rol.pk %}selected{% endif %}>
+                        {{ rol.nombre_rol }} (Nivel {{ rol.nivel_jerarquico }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding-top: 25px;">
+                <input type="checkbox" id="es_jefe_unidad" name="es_jefe_unidad" style="width: 20px; height: 20px;"
+                       {% if usuario.es_jefe_unidad %}checked{% endif %}>
+                <label for="es_jefe_unidad" style="margin: 0;">¿Es Jefe de Unidad?</label>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; display: flex; gap: 15px;">
+            <button type="submit" class="action-button">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <a href="{% url 'gestion_usuarios' %}" class="action-button" style="background-color: #7f8c8d; text-decoration: none;">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</section>
+
+<!-- Info del usuario -->
+<section class="content-box" style="margin-top: 20px; background-color: #f8f9fa;">
+    <h3 style="color: #7f8c8d;"><i class="fas fa-info-circle"></i> Información Adicional</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+        <p><strong>Fecha de creación:</strong> {{ usuario.date_joined|date:"d/m/Y H:i" }}</p>
+        <p><strong>Último acceso:</strong> {{ usuario.last_login|date:"d/m/Y H:i"|default:"Nunca" }}</p>
+        <p><strong>Estado:</strong> 
+            {% if usuario.is_active %}
+            <span style="color: #27ae60;">Activo</span>
+            {% else %}
+            <span style="color: #e74c3c;">Inactivo</span>
+            {% endif %}
+        </p>
+        <p><strong>Es Staff:</strong> {{ usuario.is_staff|yesno:"Sí,No" }}</p>
+    </div>
+</section>
+{% endblock %}

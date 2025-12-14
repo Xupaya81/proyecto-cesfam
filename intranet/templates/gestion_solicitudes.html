@@ -2,51 +2,181 @@
 
 {% block content %}
 <header class="header">
-    <h1>Solicitud de Permiso y Vacaciones</h1>
+    <h1>Solicitud de Permiso</h1>
 </header>
+
+<!-- Mostrar saldos disponibles -->
+{% if saldos %}
+<section class="content-box" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin-bottom: 1rem;">
+    <h3 style="margin-bottom: 1rem;"><i class="fas fa-chart-pie"></i> Tus Saldos Disponibles</h3>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div style="background: white; padding: 1rem; border-radius: 8px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #3498db; font-size: 2rem; font-weight: bold;">{{ saldos.vacaciones_restantes }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Vacaciones</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #27ae60; font-size: 2rem; font-weight: bold;">{{ saldos.admin_restantes }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Días Administrativos</div>
+        </div>
+        <div style="background: white; padding: 1rem; border-radius: 8px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #9b59b6; font-size: 2rem; font-weight: bold;">{{ saldos.horas_compensacion }}</div>
+            <div style="color: #7f8c8d; font-size: 0.9rem;">Horas Compensación</div>
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <section class="content-box">
     <h2>Formulario de Solicitud</h2>
-    <p>Complete los campos para iniciar el proceso de aprobación de su ausencia (Vacaciones, Días Administrativos o Licencia Médica).</p>
+    <p>Seleccione el tipo de permiso y complete los datos requeridos.</p>
+
+    {% if error %}
+    <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+    {% endif %}
 
     <form class="form-container" method="POST" action="{% url 'gestion_solicitudes' %}" enctype="multipart/form-data">
         {% csrf_token %}
         
         <div class="form-group">
-            <label for="tipo-permiso">Tipo de Permiso</label>
-            <select id="tipo-permiso" name="tipo_permiso" required>
+            <label for="tipo-permiso">Tipo de Permiso *</label>
+            <select id="tipo-permiso" name="tipo_permiso" required onchange="actualizarFormulario()">
                 <option value="">--- Seleccione el tipo ---</option>
-                <option value="vacaciones">Feriado Legal / Vacaciones</option>
-                <option value="administrativo">Días Administrativos</option>
-                <option value="licencia">Licencia Médica</option> 
-                <option value="otro">Otro (Permiso sin Goce)</option>
+                <option value="administrativo">📋 Día Administrativo (máx. 6/año)</option>
+                <option value="vacaciones">🏖️ Feriado Legal (Vacaciones)</option>
+                <option value="sin_goce">📝 Permiso sin Goce de Sueldo</option>
+                <option value="hora_medica">🏥 Hora Médica (máx. 4 horas)</option>
+                <option value="licencia">🩺 Licencia Médica (requiere documento)</option>
+                <option value="duelo">🕯️ Permiso por Duelo Familiar (3-7 días)</option>
+                <option value="compensacion">⏰ Compensación de Horas</option>
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="fecha-inicio">Fecha de Inicio</label>
-            <input type="date" id="fecha-inicio" name="fecha_inicio" required>
+        <!-- Info del tipo seleccionado -->
+        <div id="info-tipo" style="display:none; background: #e8f4fd; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3498db;">
+            <i class="fas fa-info-circle"></i> <span id="info-texto"></span>
         </div>
 
         <div class="form-group">
-            <label for="fecha-fin">Fecha de Término</label>
-            <input type="date" id="fecha-fin" name="fecha_fin" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="justificativo">Documento Justificativo (Solo para Licencia Médica)</label>
-            <input type="file" id="justificativo" name="justificativo_archivo" class="form-upload">
+            <label for="fecha-inicio">Fecha de Inicio *</label>
+            <input type="date" id="fecha-inicio" name="fecha_inicio" required onchange="calcularDias()">
         </div>
 
         <div class="form-group">
-            <label for="dias-totales">Cantidad Estimada de Días (Solo Referencia)</label>
-            <input type="number" id="dias-totales" name="dias_totales" placeholder="Se calculará automáticamente..." readonly>
+            <label for="fecha-fin">Fecha de Término *</label>
+            <input type="date" id="fecha-fin" name="fecha_fin" required onchange="calcularDias()">
+        </div>
+
+        <!-- Campo especial para Hora Médica -->
+        <div class="form-group" id="campo-horas" style="display:none;">
+            <label for="horas-solicitadas">Cantidad de Horas (1-4) *</label>
+            <select id="horas-solicitadas" name="horas_solicitadas">
+                <option value="1">1 hora</option>
+                <option value="2" selected>2 horas</option>
+                <option value="3">3 horas</option>
+                <option value="4">4 horas</option>
+            </select>
         </div>
         
-        <button type="submit" class="action-button">
-            Enviar Solicitud
+        <div class="form-group" id="campo-archivo">
+            <label for="justificativo">Documento Justificativo <span id="archivo-requerido">(Opcional)</span></label>
+            <input type="file" id="justificativo" name="justificativo_archivo" class="form-upload" accept=".pdf,.jpg,.jpeg,.png">
+            <small style="color: #7f8c8d;">Formatos aceptados: PDF, JPG, PNG</small>
+        </div>
+
+        <div class="form-group">
+            <label for="observaciones">Observaciones (Opcional)</label>
+            <textarea id="observaciones" name="observaciones" rows="3" placeholder="Información adicional sobre la solicitud..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="dias-totales">Días Solicitados</label>
+            <input type="number" id="dias-totales" name="dias_totales" value="0" readonly style="background:#f5f5f5;">
+        </div>
+        
+        <button type="submit" class="action-button" style="margin-top: 1rem;">
+            <i class="fas fa-paper-plane"></i> Enviar Solicitud
         </button>
     </form>
 </section>
+
+<script>
+const infoTipos = {
+    'administrativo': 'Máximo 6 días al año. Se descontarán de tu saldo al aprobar.',
+    'vacaciones': 'Vacaciones legales. Se descontarán de tu saldo al aprobar.',
+    'sin_goce': 'No se descuenta de ningún saldo. Sin remuneración durante el permiso.',
+    'hora_medica': 'Para atención médica personal. Máximo 4 horas. Debe presentar comprobante después.',
+    'licencia': 'Requiere documento médico obligatorio. No descuenta de vacaciones/administrativos.',
+    'duelo': '3 días por familiares, 7 días por cónyuge/hijos/padres. Requiere certificado de defunción.',
+    'compensacion': 'Para usar horas extras acumuladas. Se descontará de tus horas de compensación.'
+};
+
+const requiereDocumento = ['licencia', 'duelo'];
+const esHoraMedica = ['hora_medica'];
+
+function actualizarFormulario() {
+    const tipo = document.getElementById('tipo-permiso').value;
+    const infoDiv = document.getElementById('info-tipo');
+    const infoTexto = document.getElementById('info-texto');
+    const campoHoras = document.getElementById('campo-horas');
+    const archivoRequerido = document.getElementById('archivo-requerido');
+    const justificativo = document.getElementById('justificativo');
+    
+    // Mostrar info del tipo
+    if (tipo && infoTipos[tipo]) {
+        infoTexto.textContent = infoTipos[tipo];
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+    
+    // Campo de horas para hora médica
+    if (esHoraMedica.includes(tipo)) {
+        campoHoras.style.display = 'block';
+        // Para hora médica, las fechas son el mismo día
+        document.getElementById('fecha-fin').value = document.getElementById('fecha-inicio').value;
+    } else {
+        campoHoras.style.display = 'none';
+    }
+    
+    // Documento requerido
+    if (requiereDocumento.includes(tipo)) {
+        archivoRequerido.textContent = '(Obligatorio)';
+        archivoRequerido.style.color = '#e74c3c';
+        justificativo.required = true;
+    } else {
+        archivoRequerido.textContent = '(Opcional)';
+        archivoRequerido.style.color = '#7f8c8d';
+        justificativo.required = false;
+    }
+}
+
+function calcularDias() {
+    const inicio = document.getElementById('fecha-inicio').value;
+    const fin = document.getElementById('fecha-fin').value;
+    
+    if (inicio && fin) {
+        const fechaInicio = new Date(inicio);
+        const fechaFin = new Date(fin);
+        const diferencia = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+        
+        if (diferencia > 0) {
+            document.getElementById('dias-totales').value = diferencia;
+        } else {
+            document.getElementById('dias-totales').value = 0;
+        }
+    }
+}
+
+// Sincronizar fechas para hora médica
+document.getElementById('fecha-inicio').addEventListener('change', function() {
+    const tipo = document.getElementById('tipo-permiso').value;
+    if (tipo === 'hora_medica') {
+        document.getElementById('fecha-fin').value = this.value;
+        document.getElementById('dias-totales').value = 1;
+    }
+});
+</script>
 
 {% endblock %}

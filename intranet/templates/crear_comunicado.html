@@ -7,7 +7,12 @@
 
 <section class="content-box">
     <h2>Redactar Mensaje Oficial</h2>
-    <p>Este mensaje será visible para todos los funcionarios en su pantalla de inicio.</p>
+    
+    {% if es_subdireccion %}
+        <p>Este mensaje puede ser global (visible para todos) o dirigido a una unidad específica.</p>
+    {% else %}
+        <p>Este mensaje será visible solo para los funcionarios de tu unidad: <strong>{{ unidad_usuario.nombre_unidad }}</strong></p>
+    {% endif %}
 
     <form class="form-container" method="POST">
         {% csrf_token %}
@@ -21,6 +26,19 @@
             <label for="cuerpo">Cuerpo del Mensaje</label>
             <textarea id="cuerpo" name="cuerpo" rows="6" placeholder="Escriba aquí el detalle del comunicado..." required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Roboto', sans-serif;"></textarea>
         </div>
+        
+        {% if es_subdireccion %}
+        <div class="form-group">
+            <label for="unidad_destino">Destino del Comunicado</label>
+            <select id="unidad_destino" name="unidad_destino" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%;">
+                <option value="">🌐 Global (Todos los funcionarios)</option>
+                {% for unidad in unidades %}
+                <option value="{{ unidad.pk }}">📍 {{ unidad.nombre_unidad }}</option>
+                {% endfor %}
+            </select>
+            <small style="color: #666;">Si eliges Global, todos los funcionarios verán el comunicado.</small>
+        </div>
+        {% endif %}
         
         <button type="submit" class="action-button">
             Publicar Comunicado

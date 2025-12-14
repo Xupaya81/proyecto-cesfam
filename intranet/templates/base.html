@@ -53,6 +53,23 @@
                 <a href="{% url 'manual' %}"><i class="fas fa-book"></i> Manual</a>
             </li>
             
+            <!-- Menú de Jefe de Unidad (Solo si es_jefe_unidad y no es staff) -->
+            {% if user.es_jefe_unidad and not user.is_staff %}
+            <hr style="border-color: #4b6b8b; margin: 15px 0;">
+            <li style="padding: 10px; color: #ecf0f1; text-transform: uppercase; font-size: 0.8em; font-weight: bold;">
+                <i class="fas fa-user-tie"></i> Jefatura
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'reporte_solicitudes' %}active{% endif %}">
+                <a href="{% url 'reporte_solicitudes' %}"><i class="fas fa-inbox"></i> Bandeja Mi Unidad</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_dias' %}active{% endif %}">
+                <a href="{% url 'gestion_dias' %}"><i class="fas fa-user-edit"></i> Días Mi Equipo</a>
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'crear_comunicado' %}active{% endif %}">
+                <a href="{% url 'crear_comunicado' %}"><i class="fas fa-bullhorn"></i> Comunicado Unidad</a>
+            </li>
+            {% endif %}
+            
             <!-- Menú de Gestión (Solo Subdirección y Admin) -->
             {% if user.is_staff %}
             <hr style="border-color: #4b6b8b; margin: 15px 0;">
@@ -78,6 +95,17 @@
             </li>
             <li class="{% if request.resolver_match.url_name == 'crear_comunicado' %}active{% endif %}">
                 <a href="{% url 'crear_comunicado' %}"><i class="fas fa-bullhorn"></i> Publicar Comunicado</a>
+            </li>
+            {% endif %}
+            
+            <!-- Menú RRHH (Solo nivel <= 2: Director, Subdirección, RRHH) -->
+            {% if user.id_rol and user.id_rol.nivel_jerarquico <= 2 or user.is_superuser %}
+            <hr style="border-color: #4b6b8b; margin: 15px 0;">
+            <li style="padding: 10px; color: #ecf0f1; text-transform: uppercase; font-size: 0.8em; font-weight: bold;">
+                <i class="fas fa-id-card-alt"></i> RRHH
+            </li>
+            <li class="{% if request.resolver_match.url_name == 'gestion_usuarios' %}active{% endif %}">
+                <a href="{% url 'gestion_usuarios' %}"><i class="fas fa-users-cog"></i> Gestionar Usuarios</a>
             </li>
             {% endif %}
 
