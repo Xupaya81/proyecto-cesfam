@@ -417,7 +417,6 @@
                         <div class="choice-title">Privado</div>
                         <div class="choice-desc">Solo yo</div>
                     </label>
-                    
                     <!-- Opción para todos: Mi Unidad -->
                     <label class="visibility-choice" onclick="selectVisibility(this, 'mi_unidad')">
                         <input type="radio" name="visibilidad" value="mi_unidad">
@@ -425,18 +424,15 @@
                         <div class="choice-title">Mi Unidad</div>
                         <div class="choice-desc">Colegas de mi área</div>
                     </label>
-                    
                     <!-- Para funcionarios base: Enviar a jefatura -->
                     {% if not es_jefe and not es_superior %}
                     <label class="visibility-choice" onclick="selectVisibility(this, 'jefatura')">
                         <input type="radio" name="visibilidad" value="jefatura">
                         <i class="fas fa-arrow-up" style="color: #9b59b6;"></i>
                         <div class="choice-title">Jefatura</div>
-                        <div class="choice-desc">Mi jefe y superiores</div>
+                        <div class="choice-desc">Mi jefe</div>
                     </label>
                     {% endif %}
-                    
-                    <!-- Para Jefes: Otros Jefes -->
                     {% if es_jefe %}
                     <label class="visibility-choice" onclick="selectVisibility(this, 'otros_jefes')">
                         <input type="radio" name="visibilidad" value="otros_jefes">
@@ -451,8 +447,6 @@
                         <div class="choice-desc">Todo el CESFAM</div>
                     </label>
                     {% endif %}
-                    
-                    <!-- Para Subdirección/Director: Más opciones -->
                     {% if es_superior %}
                     <label class="visibility-choice" onclick="selectVisibility(this, 'unidad_especifica')">
                         <input type="radio" name="visibilidad" value="unidad_especifica">

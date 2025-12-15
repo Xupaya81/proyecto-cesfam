@@ -218,7 +218,6 @@ class SolicitudesPermiso(models.Model):
         ('vacaciones', 'Feriado Legal (Vacaciones)'),
         ('sin_goce', 'Permiso sin Goce de Sueldo'),
         ('hora_medica', 'Hora Médica'),
-        ('licencia', 'Licencia Médica'),
         ('duelo', 'Permiso por Duelo Familiar'),
         ('compensacion', 'Compensación de Horas'),
     ]

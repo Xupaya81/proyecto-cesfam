@@ -72,11 +72,38 @@
                 <td>{{ sol.id_funcionario_solicitante.first_name }} {{ sol.id_funcionario_solicitante.last_name }}<br><small>({{ sol.id_funcionario_solicitante.username }})</small></td>
                 <td>{{ sol.id_funcionario_solicitante.id_unidad.nombre_unidad|default:"Sin unidad" }}</td>
                 <td>
-                    <span style="
-                        {% if sol.tipo_permiso == 'administrativo' %}background-color: #27ae60;{% elif sol.tipo_permiso == 'vacaciones' %}background-color: #3498db;{% elif sol.tipo_permiso == 'sin_goce' %}background-color: #95a5a6;{% elif sol.tipo_permiso == 'hora_medica' %}background-color: #9b59b6;{% elif sol.tipo_permiso == 'licencia' %}background-color: #e67e22;{% elif sol.tipo_permiso == 'duelo' %}background-color: #34495e;{% elif sol.tipo_permiso == 'compensacion' %}background-color: #1abc9c;{% else %}background-color: #888;{% endif %}
-                        color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
-                        {{ sol.get_tipo_permiso_display }}
-                    </span>
+                    {% if sol.tipo_permiso == 'administrativo' %}
+                        <span style="background-color: #27ae60; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                    {% elif sol.tipo_permiso == 'vacaciones' %}
+                        <span style="background-color: #3498db; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                    {% elif sol.tipo_permiso == 'sin_goce' %}
+                        <span style="background-color: #95a5a6; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                    {% elif sol.tipo_permiso == 'hora_medica' %}
+                        <span style="background-color: #9b59b6; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                        {% if sol.horas_solicitadas %}
+                            <br><small>({{ sol.horas_solicitadas }}h)</small>
+                        {% endif %}
+                    {% elif sol.tipo_permiso == 'duelo' %}
+                        <span style="background-color: #34495e; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                    {% elif sol.tipo_permiso == 'compensacion' %}
+                        <span style="background-color: #1abc9c; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                    {% else %}
+                        <span style="background-color: #888; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
+                            {{ sol.get_tipo_permiso_display }}
+                        </span>
+                    {% endif %}
                     {% if sol.tipo_permiso == 'hora_medica' and sol.horas_solicitadas %}
                         <br><small>({{ sol.horas_solicitadas }}h)</small>
                     {% endif %}
@@ -85,11 +112,17 @@
                 <td>{{ sol.fecha_fin|date:"d/m/Y" }}</td>
                 <td>{{ sol.dias_solicitados }}</td>
                 <td>
-                    <span class="status-{{ sol.estado|lower }}" style="
-                        {% if sol.estado == 'Pendiente' %}background-color: #f39c12;{% elif sol.estado == 'Pre-Aprobado' %}background-color: #3498db;{% elif sol.estado == 'Aprobado' %}background-color: #27ae60;{% elif sol.estado == 'Rechazado' %}background-color: #e74c3c;{% else %}background-color: #888;{% endif %}
-                        color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">
-                        {{ sol.estado }}
-                    </span>
+                    {% if sol.estado == 'Pendiente' %}
+                        <span class="status-pendiente" style="background-color: #f39c12; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">{{ sol.estado }}</span>
+                    {% elif sol.estado == 'Pre-Aprobado' %}
+                        <span class="status-preaprobado" style="background-color: #3498db; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">{{ sol.estado }}</span>
+                    {% elif sol.estado == 'Aprobado' %}
+                        <span class="status-aprobado" style="background-color: #27ae60; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">{{ sol.estado }}</span>
+                    {% elif sol.estado == 'Rechazado' %}
+                        <span class="status-rechazado" style="background-color: #e74c3c; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">{{ sol.estado }}</span>
+                    {% else %}
+                        <span class="status-otro" style="background-color: #888; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85em;">{{ sol.estado }}</span>
+                    {% endif %}
                 </td>
                 <td>
                     {% if sol.pre_aprobado_por %}

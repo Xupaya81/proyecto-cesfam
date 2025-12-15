@@ -47,7 +47,6 @@
                 <option value="vacaciones">🏖️ Feriado Legal (Vacaciones)</option>
                 <option value="sin_goce">📝 Permiso sin Goce de Sueldo</option>
                 <option value="hora_medica">🏥 Hora Médica (máx. 4 horas)</option>
-                <option value="licencia">🩺 Licencia Médica (requiere documento)</option>
                 <option value="duelo">🕯️ Permiso por Duelo Familiar (3-7 días)</option>
                 <option value="compensacion">⏰ Compensación de Horas</option>
             </select>
@@ -107,12 +106,11 @@ const infoTipos = {
     'vacaciones': 'Vacaciones legales. Se descontarán de tu saldo al aprobar.',
     'sin_goce': 'No se descuenta de ningún saldo. Sin remuneración durante el permiso.',
     'hora_medica': 'Para atención médica personal. Máximo 4 horas. Debe presentar comprobante después.',
-    'licencia': 'Requiere documento médico obligatorio. No descuenta de vacaciones/administrativos.',
     'duelo': '3 días por familiares, 7 días por cónyuge/hijos/padres. Requiere certificado de defunción.',
     'compensacion': 'Para usar horas extras acumuladas. Se descontará de tus horas de compensación.'
 };
 
-const requiereDocumento = ['licencia', 'duelo'];
+const requiereDocumento = ['duelo'];
 const esHoraMedica = ['hora_medica'];
 
 function actualizarFormulario() {
